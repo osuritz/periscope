@@ -48,7 +48,15 @@ export function movePlayerShip(g: GameState, next: Placement): GameState {
   return { ...g, player: { ...g.player, placements } }
 }
 
+/**
+ * Leaves setup and begins the game. Guarded: a finished game must not be
+ * revived in place. The DIVE AGAIN button on the spec's victory screen must
+ * start a NEW game via `newGame` — calling this on an `over` state would
+ * otherwise resurrect a fully-fired board with `winner` still set, and the
+ * next AI shot would throw out of `untriedCells`.
+ */
 export function startPlaying(g: GameState): GameState {
+  if (g.phase !== 'setup') throw new Error('startPlaying: not in setup')
   return { ...g, phase: 'playing' }
 }
 

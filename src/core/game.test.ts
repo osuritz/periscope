@@ -65,6 +65,22 @@ describe('startPlaying', () => {
   it('moves from setup to playing', () => {
     expect(startPlaying(newGame('little', seededRng(1))).phase).toBe('playing')
   })
+
+  it('refuses to restart a game that is already playing', () => {
+    const g = startPlaying(newGame('little', seededRng(1)))
+    expect(() => startPlaying(g)).toThrow('startPlaying: not in setup')
+  })
+
+  it('refuses to revive a finished game', () => {
+    // A UI wiring DIVE AGAIN to startPlaying instead of newGame would otherwise
+    // get phase 'playing' with the winner still set and every cell fired.
+    let g = riggedGame()
+    for (const c of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }]) {
+      g = applyShot(g, 'player', c)
+    }
+    expect(g.phase).toBe('over')
+    expect(() => startPlaying(g)).toThrow('startPlaying: not in setup')
+  })
 })
 
 describe('applyShot', () => {
