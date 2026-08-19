@@ -1,0 +1,18 @@
+:root {
+  --hull: #0E1726;
+  --panel: #16233A;
+  --line: #2B3D5C;
+  --muted: #4C6A99;
+  --ink-2: #8FB4E8;
+  --scope: #33E1C4;
+  --amber: #FFC24B;
+  --sunk: #FF5B5B;
+  --paper: #F2F7FF;
+
+  --on-scope: #03332B;
+  --on-amber: #3A2600;
+  --on-sunk: #2A0000;
+
+  --amber-edge: #C98A16;
+  --sunk-edge: #B02A2A;
+}
