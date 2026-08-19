@@ -7,6 +7,13 @@ describe('coordLabel', () => {
     expect(coordLabel({ x: 2, y: 6 })).toBe('C7')
     expect(coordLabel({ x: 9, y: 9 })).toBe('J10')
   })
+
+  it('throws a RangeError on an out-of-range coord', () => {
+    expect(() => coordLabel({ x: -1, y: 0 })).toThrow(RangeError)
+    expect(() => coordLabel({ x: 0, y: -1 })).toThrow(RangeError)
+    expect(() => coordLabel({ x: 10, y: 0 })).toThrow(RangeError)
+    expect(() => coordLabel({ x: 0, y: 10 })).toThrow(RangeError)
+  })
 })
 
 describe('inBounds', () => {
