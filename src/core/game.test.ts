@@ -55,6 +55,22 @@ describe('setup', () => {
     expect(moved.player.placements).toEqual(rigged.player.placements)
   })
 
+  it('rejects a placement whose length contradicts the fleet spec', () => {
+    // fire() and sunkShipIds() read length off the Placement, so a shortened
+    // submarine would silently change the win condition rather than misdraw.
+    const g = newGame('little', seededRng(1))
+    expect(() => movePlayerShip(g, p('submarine', 0, 0, 'h', 1))).toThrow(
+      'movePlayerShip: submarine has length 3, got 1',
+    )
+  })
+
+  it('rejects a ship that is not in the fleet at all', () => {
+    const g = newGame('little', seededRng(1))
+    expect(() => movePlayerShip(g, p('battleship', 0, 0, 'h', 4))).toThrow(
+      "movePlayerShip: no ship 'battleship' in the little fleet",
+    )
+  })
+
   it('refuses to move ships once playing', () => {
     const g = startPlaying(newGame('little', seededRng(1)))
     expect(() => movePlayerShip(g, p('tug', 4, 4, 'v', 2))).toThrow('movePlayerShip: not in setup')

@@ -40,9 +40,27 @@ export function shufflePlayerFleet(g: GameState, rng: Rng): GameState {
   return { ...g, player: { ...g.player, placements: randomFleet(g.mode, rng) } }
 }
 
-/** Applies a drag or rotate from the placement screen. Illegal moves are ignored. */
+/**
+ * Applies a drag or rotate from the placement screen.
+ *
+ * Two failure modes, deliberately handled differently. An illegal POSITION is
+ * a user action — the child dragged a ship off the edge or onto another — and
+ * is ignored: `g` comes back unchanged, no throw. A placement that contradicts
+ * the fleet spec is a programming error and throws, because `fire` and
+ * `sunkShipIds` read length from the `Placement` rather than from `FLEETS`, so
+ * a wrong length would silently redefine the win condition.
+ */
 export function movePlayerShip(g: GameState, next: Placement): GameState {
   if (g.phase !== 'setup') throw new Error('movePlayerShip: not in setup')
+
+  const spec = fleetFor(g.mode).ships.find((s) => s.id === next.shipId)
+  if (!spec) throw new Error(`movePlayerShip: no ship '${next.shipId}' in the ${g.mode} fleet`)
+  if (spec.length !== next.length) {
+    throw new Error(
+      `movePlayerShip: ${next.shipId} has length ${spec.length}, got ${next.length}`,
+    )
+  }
+
   const placements = withPlacement(g.player.placements, next, g.size)
   if (!placements) return g
   return { ...g, player: { ...g.player, placements } }
