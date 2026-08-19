@@ -17,11 +17,17 @@ describe('strategy registry', () => {
 
 describe('every tier terminates', () => {
   it('always sinks the fleet within the cell budget', () => {
+    // `simulateGame` returns null when it exhausts the cap without sinking the
+    // fleet. Asserting non-null is what makes this test load-bearing: the shot
+    // count alone is <= cap by construction, so a strategy that re-fired at
+    // already-tried cells forever would return exactly cap and pass anyway.
     for (const tier of TIERS) {
       for (const mode of ['little', 'admiral'] as const) {
         const cap = mode === 'little' ? 36 : 100
         for (let seed = 0; seed < 20; seed++) {
-          expect(simulateGame(mode, tier, seed)).toBeLessThanOrEqual(cap)
+          const shots = simulateGame(mode, tier, seed)
+          expect(shots).not.toBeNull()
+          expect(shots!).toBeLessThanOrEqual(cap)
         }
       }
     }
