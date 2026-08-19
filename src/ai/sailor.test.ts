@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { sailor, targetShot } from './sailor'
-import { viewOf } from './view'
+import { viewOf, unresolvedHits } from './view'
 import { boardFrom, fire } from '../core/board'
 import type { Placement } from '../core/placement'
-import { coordKey } from '../core/coords'
+import { coordKey, orthogonalNeighbors } from '../core/coords'
 import { seededRng } from '../core/rng'
 
 const p = (shipId: string, x: number, y: number, orientation: 'h' | 'v', length: number): Placement =>
@@ -48,6 +48,35 @@ describe('targetShot', () => {
     b = fire(b, { x: 2, y: 3 }).board
     const at = targetShot(viewOf(b), seededRng(1))
     expect(at && coordKey(at)).toBe('3,2')
+  })
+
+  it('stays legal when two different ships leave orthogonally-adjacent hits', () => {
+    // shipA (vertical, length 3) at A2-A4. shipB (vertical, length 2) at B1-B2.
+    // A's hit at (0,1) and B's hit at (1,1) are horizontally adjacent, so
+    // targetShot infers a phantom run between two DIFFERENT ships' hits —
+    // it has no way to know they belong to different ships, since OpponentView
+    // carries no such information. The guarantee under test is narrower than
+    // "finds the right cell": whatever it fires at must still be legal.
+    let b = boardFrom(6, [p('shipA', 0, 1, 'v', 3), p('shipB', 1, 0, 'v', 2)])
+    b = fire(b, { x: 1, y: 1 }).board // hits shipB
+    b = fire(b, { x: 0, y: 3 }).board // hits shipA
+    b = fire(b, { x: 0, y: 1 }).board // hits shipA, leaving a gap at (0,2)
+
+    const view = viewOf(b)
+    const fired = new Set(view.shots.map((s) => coordKey(s.at)))
+    const legalCandidates = new Set(
+      unresolvedHits(view)
+        .flatMap((h) => orthogonalNeighbors(h, view.size))
+        .filter((c) => !fired.has(coordKey(c)))
+        .map(coordKey),
+    )
+
+    for (let seed = 0; seed < 50; seed++) {
+      const at = targetShot(view, seededRng(seed))
+      expect(at).not.toBeNull() // load-bearing: must still return a legal cell
+      expect(fired.has(coordKey(at!))).toBe(false)
+      expect(legalCandidates.has(coordKey(at!))).toBe(true)
+    }
   })
 })
 
