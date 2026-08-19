@@ -42,6 +42,7 @@ describe('fire', () => {
     const after = fire(b, { x: 0, y: 0 })
     expect(after.board.shots).toHaveLength(1)
     expect(after.shot.result).toBe('hit')
+    expect(after.board).toBe(b)
   })
 
   it('throws when firing off the board', () => {
