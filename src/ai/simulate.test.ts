@@ -55,4 +55,20 @@ describe('difficulty is genuinely ordered', () => {
     // Rookie is memoryless, so it needs close to the whole board on average.
     expect(averageShots('little', 'rookie', 60)).toBeGreaterThan(24)
   })
+
+  it('keeps Admiral genuinely strong, not merely stronger than Sailor', () => {
+    // The ordering assertions above are relative: all three tiers could decay
+    // together and still rank correctly. This pins the strong end in absolute
+    // terms. Measured on 10x10 over 2000 seeds: mean 45.4, sd 8.8, worst
+    // 60-seed window 48.0. Sailor's 10x10 mean is 60.1, so a 55-shot bar
+    // cannot be met by Sailor-grade play, and leaves ~19% headroom over
+    // Admiral's own 46.3 at this sample size.
+    expect(averageShots('admiral', 'admiral', 60)).toBeLessThan(55)
+  })
+
+  it('keeps Admiral genuinely strong on the small board too', () => {
+    // Measured 18.1 on 6x6 at n=60; Sailor's is 22.4, so this bar likewise
+    // separates Admiral from the tier below rather than just from random play.
+    expect(averageShots('little', 'admiral', 60)).toBeLessThan(21)
+  })
 })

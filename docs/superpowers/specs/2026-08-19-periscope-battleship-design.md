@@ -76,6 +76,44 @@ The pack governs both the audio **and the on-screen wording**, because both come
 from the same line table (§8.1). The Captain pack says `FIRE`; the Narrator pack
 says `LOOK HERE`. This is a data swap, not a code fork.
 
+### 4.4 Turn rule
+
+**A hit or a sunk keeps the turn; a miss passes it.** Firing at a cell that has
+already been fired at is a no-op that does not consume the turn, so a double-tap
+cannot cost a child their go. This was not specified by the design; it is a
+decision recorded here.
+
+It is the single rule that most shapes how the game feels, because it compounds
+whatever advantage a stronger opponent already has. Measured head-to-head win
+rates for a player firing uniformly at random among untried cells — the code's
+own model of a five-year-old, per the comment on `rookie.ts` — over 400 seeded
+games per cell, player moving first:
+
+| Board / tier | Player wins |
+|---|---|
+| Little Captain / Rookie | 57.0% |
+| Little Captain / Sailor | 7.0% |
+| Little Captain / Admiral | 1.0% |
+| Admiral / Rookie | 54.5% |
+| Admiral / Sailor | 1.5% |
+| Admiral / Admiral | 0.0% |
+
+The solitaire numbers do not predict this, which is why the mechanism is worth
+stating plainly. Measured alone, clearing a 6x6 board takes Sailor 22.2 shots
+against a random player's 32.1 — an edge of only 1.45x. The turn rule compounds
+that edge: a hunting AI that lands a hit fires again immediately and keeps
+firing until it misses, converting one hit into a chain of shots. A random
+player chains nothing. A modest per-shot advantage therefore becomes a much
+larger per-turn one.
+
+**Rookie is the default, and is the tier calibrated for the child** — a random
+player beats it slightly more often than not on both boards. On this evidence
+Sailor and Admiral are adult tiers.
+
+None of this is rubber-banding and none of it qualifies §4.2. The tiers stay
+honest and no hidden adjustment is made; this subsection records what the
+existing ladder measures.
+
 ## 5. Visual design system
 
 ### 5.1 Type
