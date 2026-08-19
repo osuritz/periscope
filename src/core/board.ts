@@ -8,6 +8,21 @@ export type ShotResult = 'miss' | 'hit' | 'sunk'
 /** What a single cell should render as. `ship` is owner-only. */
 export type CellState = 'unknown' | 'miss' | 'hit' | 'sunk' | 'ship'
 
+/**
+ * One entry in a board's chronological shot log.
+ *
+ * **The UI must render cells from `cellState`, never from `shot.result`.**
+ * `fire` marks only the FINAL cell of a destroyed ship `'sunk'`; every earlier
+ * cell of that same ship keeps `'hit'` in this log forever, because the log is
+ * a record of what was true when each shot landed and is not rewritten. A grid
+ * painted from `shot.result` therefore shows a sunk ship as one skull and a
+ * trail of crosses. `cellState` re-derives sunk-ness across the whole
+ * silhouette, which is what makes the spec's radius change on sunk work.
+ *
+ * `result` here is still the right value for the announcement of that one shot
+ * (spec 8.1's `result.hit` / `result.sunk.<shipId>` lines) — it is only cell
+ * rendering that must not use it.
+ */
 export type Shot = { at: Coord; result: ShotResult; shipId?: ShipId }
 
 export type Board = {
