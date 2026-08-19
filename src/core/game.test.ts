@@ -127,6 +127,22 @@ describe('applyShot', () => {
     expect(again.turn).toBe('player')
   })
 
+  it('does not consume a turn when the computer fires at an already-fired cell', () => {
+    // Mirror of the player-side case above. Now load-bearing: computerShot
+    // detects this no-op by reference identity and throws rather than letting a
+    // UI turn loop spin.
+    let g = startPlaying(newGame('little', seededRng(1)))
+    g = { ...g, turn: 'computer', player: boardFrom(6, [p('tug', 0, 0, 'h', 2)]) }
+    g = applyShot(g, 'computer', { x: 5, y: 5 }) // miss -> player turn
+    expect(g.turn).toBe('player')
+
+    const before = { ...g, turn: 'computer' as const }
+    const again = applyShot(before, 'computer', { x: 5, y: 5 })
+    expect(again).toBe(before) // same reference, exactly as on the player side
+    expect(again.player.shots).toHaveLength(1)
+    expect(again.turn).toBe('computer')
+  })
+
   it('declares the player the winner when the computer fleet is destroyed', () => {
     let g = riggedGame()
     for (const c of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }]) {

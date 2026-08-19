@@ -66,6 +66,14 @@ describe('difficulty is genuinely ordered', () => {
     expect(averageShots('admiral', 'admiral', 60)).toBeLessThan(55)
   })
 
+  it('keeps Sailor genuinely stronger than random, in absolute terms', () => {
+    // Replaces sailor.test.ts's "fewer shots than exhaustive search" bar, which
+    // asserted shots < 36 on a 36-cell board and was cleared by random play.
+    // Measured 22.4 on 6x6 at n=60 against Rookie's 32.9, so 26 separates
+    // Sailor from memoryless play with ~16% headroom.
+    expect(averageShots('little', 'sailor', 60)).toBeLessThan(26)
+  })
+
   it('keeps Admiral genuinely strong on the small board too', () => {
     // Measured 18.1 on 6x6 at n=60; Sailor's is 22.4, so this bar likewise
     // separates Admiral from the tier below rather than just from random play.

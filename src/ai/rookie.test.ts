@@ -75,8 +75,11 @@ describe('rookie', () => {
 
   it('does not chase adjacent cells after a hit', () => {
     // Rookie is memoryless. Given a hit at C1, its next shot should be
-    // adjacent no more often than chance. Over many trials, an adjacency rate
-    // near 4/35 is expected; a targeting AI would be far above it.
+    // adjacent no more often than chance. (2,0) sits on the top edge, so it
+    // has 3 in-bounds orthogonal neighbours, not 4, among 35 untried cells:
+    // the expected adjacency rate is 3/35 = 0.0857, which is what the measured
+    // 0.0900 matches. A targeting AI would be far above it. The 0.25 threshold
+    // is ~11 sigma out either way, so it is not sensitive to this arithmetic.
     let adjacent = 0
     const trials = 400
     for (let seed = 0; seed < trials; seed++) {

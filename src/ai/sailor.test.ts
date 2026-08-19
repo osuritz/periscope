@@ -99,16 +99,4 @@ describe('sailor', () => {
       expect(Math.abs(at.x - 2) + Math.abs(at.y - 2)).toBe(1)
     }
   })
-
-  it('sinks a known fleet in fewer shots than exhaustive search', () => {
-    let b = fixture()
-    const rng = seededRng(12)
-    let shots = 0
-    while (b.placements.some((pl) => b.shots.filter((s) => s.shipId === pl.shipId).length < pl.length)) {
-      b = fire(b, sailor(viewOf(b), rng)).board
-      shots++
-      if (shots > 36) break
-    }
-    expect(shots).toBeLessThan(36)
-  })
 })
