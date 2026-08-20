@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./ui/fonts.css";
 @import "./ui/tokens.css";
 
 html, body, #root { height: 100%; }
@@ -6,5 +7,5 @@ body {
   margin: 0;
   background: var(--hull);
   color: var(--paper);
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
