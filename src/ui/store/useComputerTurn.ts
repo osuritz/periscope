@@ -7,17 +7,22 @@ import { useGameStore } from './gameStore'
  * just happened to his fleet.
  *
  * A hit keeps the turn, so the computer may fire several times running. The
- * effect re-runs on every state change, scheduling one shot per beat until the
- * turn passes back or the game ends.
+ * effect depends on the `game` object itself, not its individual primitive
+ * fields: `set()` produces a fresh `game` reference on every shot, including
+ * a hit that leaves `phase` and `turn` unchanged, so keying off `game` is what
+ * makes the effect re-run and reschedule the next beat. Selecting `phase` and
+ * `turn` as separate primitives would miss exactly that case, since Zustand's
+ * selector hooks only re-render when the *selected* value changes under
+ * `Object.is` — a hit-that-keeps-the-turn changes neither, so the effect would
+ * never be reconsidered and the computer's turn would stall for good.
  */
 export function useComputerTurn(delayMs = 700): void {
-  const phase = useGameStore((s) => s.game.phase)
-  const turn = useGameStore((s) => s.game.turn)
+  const game = useGameStore((s) => s.game)
   const takeComputerTurn = useGameStore((s) => s.takeComputerTurn)
 
   useEffect(() => {
-    if (phase !== 'playing' || turn !== 'computer') return
+    if (game.phase !== 'playing' || game.turn !== 'computer') return
     const id = setTimeout(takeComputerTurn, delayMs)
     return () => clearTimeout(id)
-  }, [phase, turn, takeComputerTurn, delayMs])
+  }, [game, takeComputerTurn, delayMs])
 }

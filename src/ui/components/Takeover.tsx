@@ -41,7 +41,7 @@ export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 900 
   return (
     <button
       type="button"
-      aria-label={`${WORD[result]}. ${caption}. Tap to continue`}
+      aria-label="Tap to continue"
       onClick={onDismiss}
       style={{
         position: 'fixed',

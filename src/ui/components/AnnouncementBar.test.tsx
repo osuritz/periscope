@@ -28,6 +28,18 @@ describe('announcementText', () => {
       'A1… they hit your tug!',
     )
   })
+
+  it('names the ship in the second person when the computer sinks it', () => {
+    expect(announcementText({ by: 'computer', at: { x: 0, y: 0 }, result: 'sunk', shipId: 'tug' })).toBe(
+      'A1… they sank your tug!',
+    )
+  })
+
+  it('reads a computer miss', () => {
+    expect(announcementText({ by: 'computer', at: { x: 4, y: 6 }, result: 'miss' })).toBe(
+      'E7… they missed!',
+    )
+  })
 })
 
 describe('AnnouncementBar', () => {
