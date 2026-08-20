@@ -53,7 +53,7 @@ describe('Cell', () => {
 
     rerender(<Cell state="ship" size={14} label="C7" />)
     expect(screen.queryByRole('button')).toBeNull()
-    expect(screen.getByRole('img', { name: 'C7, ship' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'C7, ship' }).textContent).toBe('■')
   })
 
   it('applies the requested size to both axes', () => {

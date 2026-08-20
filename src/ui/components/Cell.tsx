@@ -20,7 +20,7 @@ const GLYPH: Record<CellState, string> = {
   miss: '○',
   hit: '✕',
   sunk: '☠',
-  ship: '',
+  ship: '■',
 }
 
 const FILL: Record<CellState, string> = {

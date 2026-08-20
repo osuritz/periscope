@@ -56,6 +56,17 @@ describe('gameStore', () => {
     expect(s().game).toBe(after)
   })
 
+  it('reports canFire false for an already-fired cell, isolated from turn and phase', () => {
+    // A hit keeps the turn with the player and leaves phase 'playing', so
+    // unlike the miss-based canFire test below, only the alreadyFired guard
+    // itself can be responsible for the false here.
+    const hit = aShipCell()
+    s().fireAt(hit)
+    expect(s().game.turn).toBe('player')
+    expect(s().game.phase).toBe('playing')
+    expect(s().canFire(hit)).toBe(false)
+  })
+
   it('reports canFire honestly', () => {
     const at = anEmptyCell()
     expect(s().canFire(at)).toBe(true)
