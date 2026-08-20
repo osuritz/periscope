@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import "./ui/fonts.css";
+@import "tailwindcss";
 @import "./ui/tokens.css";
 
 html, body, #root { height: 100%; }
