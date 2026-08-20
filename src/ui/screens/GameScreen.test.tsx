@@ -61,6 +61,42 @@ describe('GameScreen', () => {
     expect(screen.getByText(/Tap a square to fire!/)).toBeInTheDocument()
   })
 
+  it('shrinks the scope cells to the 44px tap floor for a phone held sideways', () => {
+    // Regression for the Task 10 review's Critical finding: at 844×390 the
+    // scope grid was silently clipped (307px of it, plus the whole THEIR
+    // FLEET footer) because the wrapper had no way to shrink the grid to fit.
+    // jsdom has no real layout engine, so the clip itself can't be asserted
+    // here — this instead asserts the thing that actually drives the fix:
+    // the landscape structure is kept (side by side, not stacked, so nothing
+    // else competes with the scope for height) and the cell size this short
+    // a viewport forces the scope down to. Real-device confirmation that the
+    // grid and its footer are fully visible without scrolling is in
+    // task-10-report.md.
+    installMatchMedia(844, 390)
+    render(<GameScreen />)
+    const theirs = screen.getByRole('group', { name: /their sea/i })
+    const cells = within(theirs).getAllByRole('button')
+    expect(cells).toHaveLength(36)
+    for (const cell of cells) {
+      expect(cell.style.width).toBe('44px')
+    }
+    // The asymmetry survives even at the floor: the scope is still visibly
+    // larger than the passive deck readout.
+    const mine = screen.getByRole('group', { name: /my deck/i })
+    const deckCells = within(mine).getAllByRole('img')
+    expect(parseInt(deckCells[0]!.style.width)).toBeLessThan(44)
+  })
+
+  it('keeps the spec cell size for a merely tall-enough landscape viewport (1133×744)', () => {
+    // The milder half of the same defect: 18px short of the spec table's
+    // 472px content height, which should shrink the gap, not the cell.
+    installMatchMedia(1133, 744)
+    render(<GameScreen />)
+    const theirs = screen.getByRole('group', { name: /their sea/i })
+    const cell = within(theirs).getAllByRole('button')[0]!
+    expect(cell.style.width).toBe('72px')
+  })
+
   it('offers a restart once the game is over', async () => {
     act(() => {
       while (s().game.phase === 'playing') {

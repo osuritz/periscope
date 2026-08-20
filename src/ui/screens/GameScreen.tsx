@@ -5,7 +5,7 @@ import Grid from '../components/Grid'
 import LastShotChip from '../components/LastShotChip'
 import TakeoverView from '../components/Takeover'
 import TurnBar from '../components/TurnBar'
-import { useLayout } from '../layout'
+import { useCompact, useLayout, useViewportHeight } from '../layout'
 import { deckSizing, scopeSizing } from '../sizing'
 import { useGameStore } from '../store/gameStore'
 import { useComputerTurn } from '../store/useComputerTurn'
@@ -13,8 +13,29 @@ import { useComputerTurn } from '../store/useComputerTurn'
 /** Reserves room for the last-shot chip so its first appearance (it renders
  * null before the first shot) doesn't shift the scope header's layout. Set to
  * the chip's own rendered height — 18px Space Grotesk bold over 6px
- * top/bottom padding — measured at 39px in the browser. */
+ * top/bottom padding — measured at 39px in the browser. Halved when
+ * `compact`, matching the smaller header font that goes with it — measured
+ * the same way, in the browser, at 24px. */
 const LAST_SHOT_CHIP_MIN_HEIGHT = 39
+const LAST_SHOT_CHIP_MIN_HEIGHT_COMPACT = 24
+
+/**
+ * Everything around the scope grid in the `landscape` layout — main's padding
+ * and row-gaps, the turn bar, the panel's header/footer/padding/border/gaps —
+ * measured with real viewport emulation (see task-10-report.md) rather than
+ * summed from the styles below, since line-height and font-metric rounding
+ * make the two disagree by a few px. Kept a little conservative (the measured
+ * available height ran ~2-3px ahead of what `scopeSizing` demanded) so normal
+ * rendering variance doesn't reopen the clip this exists to close.
+ *
+ * Only `landscape` gets this treatment: it is the one layout where the scope
+ * and deck panels sit side by side, so nothing else competes with the scope
+ * panel for vertical space and a single constant is accurate. `portrait` and
+ * `phone` already fit at their required viewports without it.
+ */
+function landscapeChromeOverhead(compact: boolean): number {
+  return compact ? 118 : 292
+}
 
 /**
  * Spec §7. One component tree, three layouts.
@@ -26,6 +47,8 @@ const LAST_SHOT_CHIP_MIN_HEIGHT = 39
  */
 export default function GameScreen() {
   const layout = useLayout()
+  const compact = useCompact()
+  const viewportHeight = useViewportHeight()
   const game = useGameStore((s) => s.game)
   const mode = useGameStore((s) => s.mode)
   const takeover = useGameStore((s) => s.takeover)
@@ -36,7 +59,11 @@ export default function GameScreen() {
   useComputerTurn()
 
   const myTurn = game.phase === 'playing' && game.turn === 'player'
-  const scope = scopeSizing(layout, mode)
+  const fit =
+    layout === 'landscape'
+      ? { rows: game.size, availableHeight: viewportHeight - landscapeChromeOverhead(compact) }
+      : undefined
+  const scope = scopeSizing(layout, mode, fit)
   const deck = deckSizing(layout, mode)
 
   const scopePanel = (
@@ -44,22 +71,23 @@ export default function GameScreen() {
       style={{
         flex: 1,
         minHeight: 0,
-        borderRadius: 22,
+        minWidth: 0,
+        borderRadius: compact ? 14 : 22,
         background: 'var(--panel)',
         border: '4px solid var(--scope)',
         boxSizing: 'border-box',
-        padding: 16,
+        padding: compact ? 4 : 16,
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        gap: compact ? 3 : 12,
       }}
     >
-      <header style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 10 }}>
         <span
           aria-hidden="true"
           style={{
-            width: 40,
-            height: 40,
+            width: compact ? 18 : 40,
+            height: compact ? 18 : 40,
             borderRadius: '50%',
             border: '3px solid var(--scope)',
             color: 'var(--scope)',
@@ -67,19 +95,43 @@ export default function GameScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             boxSizing: 'border-box',
+            fontSize: compact ? 10 : undefined,
           }}
         >
           ◎
         </span>
-        <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--scope)' }}>
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-display)',
+            fontSize: compact ? 12 : 24,
+            color: 'var(--scope)',
+          }}
+        >
           SCOPE — THEIR SEA
         </h2>
-        <span style={{ marginLeft: 'auto', minHeight: LAST_SHOT_CHIP_MIN_HEIGHT, display: 'flex', alignItems: 'center' }}>
-          <LastShotChip lastShot={game.lastShot} />
+        <span
+          style={{
+            marginLeft: 'auto',
+            minHeight: compact ? LAST_SHOT_CHIP_MIN_HEIGHT_COMPACT : LAST_SHOT_CHIP_MIN_HEIGHT,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <LastShotChip lastShot={game.lastShot} compact={compact} />
         </span>
       </header>
 
-      <div style={{ display: 'flex', justifyContent: 'center', overflow: 'auto' }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'auto',
+        }}
+      >
         <Grid
           board={game.computer}
           reveal={false}
@@ -90,9 +142,9 @@ export default function GameScreen() {
         />
       </div>
 
-      <footer style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-2)' }}>THEIR FLEET</span>
-        <FleetPips board={game.computer} tone="enemy" />
+      <footer style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: compact ? 4 : 8 }}>
+        <span style={{ fontSize: compact ? 9 : 14, fontWeight: 700, color: 'var(--ink-2)' }}>THEIR FLEET</span>
+        <FleetPips board={game.computer} tone="enemy" compact={compact} />
       </footer>
     </section>
   )
@@ -101,23 +153,33 @@ export default function GameScreen() {
     <section
       style={{
         flex: 'none',
+        minWidth: 0,
         borderRadius: 22,
         background: 'var(--panel)',
         border: '2px solid var(--line)',
         boxSizing: 'border-box',
-        padding: '14px 18px',
+        padding: layout === 'phone' ? '8px 8px' : '14px 18px',
         display: 'flex',
         flexDirection: layout === 'landscape' ? 'column' : 'row',
+        flexWrap: layout === 'phone' ? 'wrap' : 'nowrap',
         alignItems: 'center',
-        gap: 18,
+        justifyContent: layout === 'phone' ? 'center' : 'flex-start',
+        gap: layout === 'phone' ? 4 : 18,
       }}
     >
-      <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--ink-2)' }}>
+      <h2
+        style={{
+          margin: 0,
+          fontFamily: 'var(--font-display)',
+          fontSize: layout === 'phone' ? 12 : 20,
+          color: 'var(--ink-2)',
+        }}
+      >
         MY DECK
       </h2>
       <Grid board={game.player} reveal sizing={deck} label="my deck" />
       <span style={{ marginLeft: layout === 'landscape' ? 0 : 'auto' }}>
-        <FleetPips board={game.player} tone="own" />
+        <FleetPips board={game.player} tone="own" compact={layout === 'phone'} />
       </span>
     </section>
   )
@@ -148,17 +210,32 @@ export default function GameScreen() {
         style={{
           height: '100%',
           boxSizing: 'border-box',
-          padding: layout === 'phone' ? 14 : 20,
+          padding: compact ? 6 : layout === 'phone' ? 14 : 20,
           display: 'grid',
-          gap: layout === 'phone' ? 10 : 14,
-          gridTemplateRows: layout === 'landscape' ? 'auto 1fr auto' : 'auto 1fr auto auto',
-          gridTemplateColumns: '1fr',
+          gap: compact ? 6 : layout === 'phone' ? 10 : 14,
+          gridTemplateRows:
+            layout === 'landscape' ? 'auto minmax(0, 1fr) auto' : 'auto minmax(0, 1fr) auto auto',
+          gridTemplateColumns: 'minmax(0, 1fr)',
         }}
       >
-        <TurnBar turn={game.turn} phase={game.phase} layout={layout} live={layout !== 'phone'} />
+        <TurnBar
+          turn={game.turn}
+          phase={game.phase}
+          layout={layout}
+          live={layout !== 'phone'}
+          compact={compact}
+        />
 
         {layout === 'landscape' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '62fr 38fr', gap: 14, minHeight: 0 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '62fr 38fr',
+              gridTemplateRows: 'minmax(0, 1fr)',
+              gap: compact ? 8 : 14,
+              minHeight: 0,
+            }}
+          >
             {scopePanel}
             {deckPanel}
           </div>

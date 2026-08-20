@@ -12,6 +12,12 @@ export type TurnBarProps = {
    * to avoid a screen reader announcing every shot twice.
    */
   live?: boolean
+  /**
+   * A short viewport (see `useCompact`) has no room for the full-height bar.
+   * Shrinks the bar, its icon and its type — the bar is redundant by design
+   * (the bezel is the primary signal), so it can afford to give up space.
+   */
+  compact?: boolean
 }
 
 /**
@@ -19,7 +25,7 @@ export type TurnBarProps = {
  * the bezel (spec §5.4), which is why this is redundant by design rather than
  * the primary signal.
  */
-export default function TurnBar({ turn, phase, layout, live = true }: TurnBarProps) {
+export default function TurnBar({ turn, phase, layout, live = true, compact = false }: TurnBarProps) {
   const mine = phase === 'playing' && turn === 'player'
   const text = phase === 'over' ? 'GAME OVER' : mine ? 'YOU FIRE' : 'THEIR TURN'
 
@@ -28,32 +34,32 @@ export default function TurnBar({ turn, phase, layout, live = true }: TurnBarPro
       role="status"
       aria-live={live ? 'polite' : 'off'}
       style={{
-        height: layout === 'phone' ? 74 : 92,
+        height: compact ? 32 : layout === 'phone' ? 74 : 92,
         flex: 'none',
-        borderRadius: 20,
+        borderRadius: compact ? 10 : 20,
         background: mine ? 'var(--amber)' : 'var(--panel)',
         color: mine ? 'var(--on-amber)' : 'var(--ink-2)',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
-        padding: '0 20px',
+        gap: compact ? 6 : 16,
+        padding: compact ? '0 10px' : '0 20px',
         fontFamily: 'var(--font-display)',
-        fontSize: layout === 'phone' ? 26 : 38,
+        fontSize: compact ? 13 : layout === 'phone' ? 26 : 38,
         lineHeight: 1,
       }}
     >
       <span
         aria-hidden="true"
         style={{
-          width: layout === 'phone' ? 48 : 60,
-          height: layout === 'phone' ? 48 : 60,
+          width: compact ? 18 : layout === 'phone' ? 48 : 60,
+          height: compact ? 18 : layout === 'phone' ? 48 : 60,
           borderRadius: '50%',
           background: mine ? 'var(--on-amber)' : 'var(--line)',
           color: mine ? 'var(--amber)' : 'var(--ink-2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: layout === 'phone' ? 22 : 30,
+          fontSize: compact ? 11 : layout === 'phone' ? 22 : 30,
         }}
       >
         {mine ? '▶' : '⏳'}

@@ -4,6 +4,8 @@ export type FleetPipsProps = {
   board: Board
   /** `enemy` pips are what he is hunting; `own` pips are his fleet's health. */
   tone: 'enemy' | 'own'
+  /** A short viewport (see `useCompact`) — shrinks the pips to reclaim height. */
+  compact?: boolean
 }
 
 /**
@@ -11,11 +13,11 @@ export type FleetPipsProps = {
  * actual ships rather than as an abstract counter. A sunk ship turns red and
  * carries the skull, matching the cell state it corresponds to.
  */
-export default function FleetPips({ board, tone }: FleetPipsProps) {
+export default function FleetPips({ board, tone, compact = false }: FleetPipsProps) {
   const sunk = new Set(sunkShipIds(board))
   return (
     <ul
-      style={{ display: 'flex', gap: 6, listStyle: 'none', margin: 0, padding: 0 }}
+      style={{ display: 'flex', gap: compact ? 4 : 6, listStyle: 'none', margin: 0, padding: 0 }}
       aria-label={tone === 'enemy' ? 'their fleet' : 'my fleet'}
     >
       {board.placements.map((p) => {
@@ -25,15 +27,15 @@ export default function FleetPips({ board, tone }: FleetPipsProps) {
             key={p.shipId}
             aria-label={`${p.shipId}, ${dead ? 'sunk' : 'afloat'}`}
             style={{
-              width: 12 + p.length * 12,
-              height: 26,
-              borderRadius: dead ? 4 : 6,
+              width: (compact ? 7 : 12) + p.length * (compact ? 7 : 12),
+              height: compact ? 14 : 26,
+              borderRadius: dead ? 3 : 5,
               background: dead ? 'var(--sunk)' : tone === 'own' ? 'var(--scope)' : 'var(--line)',
               color: 'var(--on-sunk)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 15,
+              fontSize: compact ? 9 : 15,
               lineHeight: 1,
             }}
           >
