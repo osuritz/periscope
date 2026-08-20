@@ -120,9 +120,11 @@ describe('core and ai stay pure', () => {
   })
 
   it('forbids core from importing ai', () => {
-    for (const s of sources) {
-      if (!s.path.includes('/core/')) continue
-      expect(s.text).not.toMatch(/from '\.\.\/ai/)
+    for (const { path, text } of sources) {
+      if (!path.includes('/core/')) continue
+      for (const specifier of importSpecifiers(text)) {
+        expect(specifier.startsWith('../ai'), `${path} imports '${specifier}'`).toBe(false)
+      }
     }
   })
 })
