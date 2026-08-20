@@ -23,8 +23,12 @@ describe('Grid', () => {
 
   it('reveals ships to their owner', () => {
     render(<Grid board={fixture()} reveal sizing={{ cell: 26, gap: 3 }} label="my deck" />)
-    // Owner view is inert, so assert on the rendered tree rather than roles.
+    // Owner view is inert, so assert on the rendered tree rather than roles —
+    // but the cells must still all be there and perceivable, not just absent
+    // of buttons.
     expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getAllByRole('img')).toHaveLength(36)
+    expect(screen.getByRole('img', { name: 'A1, ship' })).toBeInTheDocument()
   })
 
   it('reports the coordinate that was tapped', async () => {

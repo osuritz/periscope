@@ -67,13 +67,21 @@ export default function Cell({ state, size, label, onFire, disabled }: CellProps
     boxShadow: state === 'unknown' ? 'inset 0 0 0 8px rgba(0,0,0,.25)' : undefined,
   }
 
-  // No handler means this is the own-deck readout: inert, and not a tab stop.
-  if (!onFire) return <div style={style} aria-hidden="true" />
+  // No handler means this is the own-deck readout: inert and not a tab stop,
+  // but still perceivable — same glyph and accessible name as the button, so
+  // state is never colour-alone here either (spec §5.3).
+  if (!onFire) {
+    return (
+      <div style={style} role="img" aria-label={`${label}, ${state}`}>
+        {GLYPH[state]}
+      </div>
+    )
+  }
 
   return (
     <button
       type="button"
-      style={style}
+      style={{ ...style, appearance: 'none', WebkitAppearance: 'none' }}
       onClick={onFire}
       disabled={disabled}
       aria-label={`${label}, ${state}`}

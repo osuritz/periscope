@@ -45,8 +45,15 @@ describe('Cell', () => {
   })
 
   it('is not a button at all when it has no handler — the deck readout case', () => {
-    render(<Cell state="ship" size={14} label="C7" />)
+    const { rerender } = render(<Cell state="hit" size={14} label="C7" />)
     expect(screen.queryByRole('button')).toBeNull()
+    // Colour alone must never carry state on the deck either: the glyph has
+    // to be there even though nothing is clickable.
+    expect(screen.getByRole('img', { name: 'C7, hit' }).textContent).toBe('✕')
+
+    rerender(<Cell state="ship" size={14} label="C7" />)
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByRole('img', { name: 'C7, ship' })).toBeInTheDocument()
   })
 
   it('applies the requested size to both axes', () => {
