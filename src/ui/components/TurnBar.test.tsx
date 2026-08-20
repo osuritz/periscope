@@ -38,4 +38,12 @@ describe('TurnBar', () => {
     render(<TurnBar turn="player" phase="over" layout="portrait" />)
     expect(screen.getByText('GAME OVER')).toBeInTheDocument()
   })
+
+  it('is a live region by default, and can be silenced via `live`', () => {
+    const { rerender, container } = render(<TurnBar turn="player" phase="playing" layout="portrait" />)
+    const bar = () => container.firstElementChild as HTMLElement
+    expect(bar().getAttribute('aria-live')).toBe('polite')
+    rerender(<TurnBar turn="player" phase="playing" layout="portrait" live={false} />)
+    expect(bar().getAttribute('aria-live')).toBe('off')
+  })
 })

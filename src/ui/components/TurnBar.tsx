@@ -1,21 +1,32 @@
 import type { Phase, Side } from '../../core/game'
 import type { LayoutName } from '../layout'
 
-export type TurnBarProps = { turn: Side; phase: Phase; layout: LayoutName }
+export type TurnBarProps = {
+  turn: Side
+  phase: Phase
+  layout: LayoutName
+  /**
+   * Whether this bar is the live region announcing turn changes. Defaults to
+   * true. On the phone layout `AnnouncementBar` is the single live region
+   * carrying the real game information, so `GameScreen` passes `false` there
+   * to avoid a screen reader announcing every shot twice.
+   */
+  live?: boolean
+}
 
 /**
  * The bar names the turn in words for the adult in the room. The child reads
  * the bezel (spec §5.4), which is why this is redundant by design rather than
  * the primary signal.
  */
-export default function TurnBar({ turn, phase, layout }: TurnBarProps) {
+export default function TurnBar({ turn, phase, layout, live = true }: TurnBarProps) {
   const mine = phase === 'playing' && turn === 'player'
   const text = phase === 'over' ? 'GAME OVER' : mine ? 'YOU FIRE' : 'THEIR TURN'
 
   return (
     <div
       role="status"
-      aria-live="polite"
+      aria-live={live ? 'polite' : 'off'}
       style={{
         height: layout === 'phone' ? 74 : 92,
         flex: 'none',
