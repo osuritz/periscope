@@ -7,9 +7,9 @@ describe('announcementText', () => {
     expect(announcementText(null)).toBe('Tap a square to fire!')
   })
 
-  it('reads a player hit as the coordinate then the result', () => {
+  it('reads a player hit as the coordinate then the result, naming the ship (the opponent names it on every hit, not just a sink)', () => {
     expect(announcementText({ by: 'player', at: { x: 2, y: 6 }, result: 'hit', shipId: 'sub' })).toBe(
-      'G3… HIT!',
+      'G3… you hit their sub!',
     )
   })
 
@@ -45,7 +45,7 @@ describe('announcementText', () => {
 describe('AnnouncementBar', () => {
   it('shows the current line', () => {
     render(<AnnouncementBar lastShot={{ by: 'player', at: { x: 2, y: 6 }, result: 'hit', shipId: 'sub' }} />)
-    expect(screen.getByText(/G3… HIT!/)).toBeInTheDocument()
+    expect(screen.getByText(/G3… you hit their sub!/)).toBeInTheDocument()
   })
 
   it('announces politely rather than interrupting', () => {

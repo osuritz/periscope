@@ -1,4 +1,5 @@
-import { sunkShipIds, type Board } from '../../core/board'
+import { cellState, sunkShipIds, type Board, type CellState } from '../../core/board'
+import { placementCells } from '../../core/placement'
 
 export type FleetPipsProps = {
   board: Board
@@ -9,12 +10,69 @@ export type FleetPipsProps = {
 }
 
 /**
- * One pip per ship, width proportional to length — so the shapes read as the
- * actual ships rather than as an abstract counter. A sunk ship turns red and
- * carries the skull, matching the cell state it corresponds to.
+ * One glyph per resolved segment state — mirrors `Cell.tsx` so a hit/sunk
+ * segment reads the same way a hit/sunk board cell does. `ship` and `unknown`
+ * are both blank: the only way to tell a live own-fleet cell from a hidden
+ * enemy one is which fleet group it's in, which is exactly the information
+ * each of those two states is allowed to carry.
+ */
+const GLYPH: Record<CellState, string> = {
+  unknown: '',
+  miss: '',
+  hit: '✕',
+  sunk: '☠',
+  ship: '',
+}
+
+const FILL: Record<CellState, string> = {
+  unknown: 'var(--panel)',
+  miss: 'var(--hull)',
+  hit: 'var(--amber)',
+  sunk: 'var(--sunk)',
+  ship: 'var(--scope)',
+}
+
+const BORDER: Record<CellState, string> = {
+  unknown: 'var(--line)',
+  miss: 'var(--muted)',
+  hit: 'var(--amber-edge)',
+  sunk: 'var(--sunk-edge)',
+  ship: 'var(--scope)',
+}
+
+const INK: Record<CellState, string> = {
+  unknown: 'transparent',
+  miss: 'transparent',
+  hit: 'var(--on-amber)',
+  sunk: 'var(--on-sunk)',
+  ship: 'var(--on-scope)',
+}
+
+/**
+ * One pip GROUP per ship, one small SQUARE per cell of that ship's length —
+ * so a partially-damaged ship shows exactly which cells took a hit instead
+ * of an undifferentiated bar (the thing the five-year-old's feedback flagged:
+ * he couldn't count hit points on a continuous bar sized off ship length).
+ *
+ * Every segment's fill comes from `cellState(board, coord, reveal)`, never
+ * from `board.placements` or the shot log directly — see the trap documented
+ * on the `Shot` type and in CLAUDE.md. `own` passes `reveal=true` so an
+ * unfired cell reads `ship`; `enemy` passes `reveal=false` so an unfired cell
+ * reads `unknown` and stays hidden. Showing enemy damage per-ship is correct:
+ * the official rules have the opponent name the ship on every hit, not just
+ * on a sink (see docs/BATTLESHIP-RULES.md, "Mistakes already made" #2).
+ *
+ * Segments are kept deliberately tiny — smaller than even the passive
+ * own-deck cells, let alone the interactive scope grid — because this is a
+ * readout of a readout, not a second board, and must never compete for
+ * attention with the enemy scope (spec's core asymmetry).
  */
 export default function FleetPips({ board, tone, compact = false }: FleetPipsProps) {
   const sunk = new Set(sunkShipIds(board))
+  const reveal = tone === 'own'
+  const segmentSize = compact ? 8 : 12
+  const radius = compact ? 2 : 3
+
   return (
     <ul
       style={{ display: 'flex', gap: compact ? 4 : 6, listStyle: 'none', margin: 0, padding: 0 }}
@@ -26,20 +84,33 @@ export default function FleetPips({ board, tone, compact = false }: FleetPipsPro
           <li
             key={p.shipId}
             aria-label={`${p.shipId}, ${dead ? 'sunk' : 'afloat'}`}
-            style={{
-              width: (compact ? 7 : 12) + p.length * (compact ? 7 : 12),
-              height: compact ? 14 : 26,
-              borderRadius: dead ? 3 : 5,
-              background: dead ? 'var(--sunk)' : tone === 'own' ? 'var(--scope)' : 'var(--line)',
-              color: 'var(--on-sunk)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: compact ? 9 : 15,
-              lineHeight: 1,
-            }}
+            style={{ display: 'flex', gap: 1, listStyle: 'none' }}
           >
-            {dead ? '☠' : ''}
+            {placementCells(p).map((cell, i) => {
+              const state = cellState(board, cell, reveal)
+              return (
+                <span
+                  key={i}
+                  aria-hidden="true"
+                  style={{
+                    width: segmentSize,
+                    height: segmentSize,
+                    borderRadius: state === 'sunk' ? 1 : radius,
+                    background: FILL[state],
+                    border: `1px solid ${BORDER[state]}`,
+                    color: INK[state],
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: compact ? 6 : 8,
+                    lineHeight: 1,
+                  }}
+                >
+                  {GLYPH[state]}
+                </span>
+              )
+            })}
           </li>
         )
       })}

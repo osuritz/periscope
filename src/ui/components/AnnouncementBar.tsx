@@ -13,7 +13,7 @@ export function announcementText(lastShot: LastShot | null): string {
 
   if (lastShot.by === 'player') {
     if (lastShot.result === 'sunk') return `${where}… you sank their ${ship}!`
-    return lastShot.result === 'hit' ? `${where}… HIT!` : `${where}… miss.`
+    return lastShot.result === 'hit' ? `${where}… you hit their ${ship}!` : `${where}… miss.`
   }
   if (lastShot.result === 'sunk') return `${where}… they sank your ${ship}!`
   return lastShot.result === 'hit' ? `${where}… they hit your ${ship}!` : `${where}… they missed!`
