@@ -16,6 +16,10 @@ describe('useComputerTurn', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     s().restart('little', 'rookie')
+    // The hook now waits for the result takeover to clear before starting its
+    // beat, so every test that is not ABOUT that gate turns takeovers off and
+    // measures the beat alone. The gate has its own test below.
+    s().setReduceMotion(true)
   })
   afterEach(() => vi.useRealTimers())
 
@@ -49,6 +53,29 @@ describe('useComputerTurn', () => {
     expect(s().game.player.shots).toHaveLength(1)
   })
 
+  it('does not fire while the result takeover is up, and fires once it clears', () => {
+    // The bug this covers: the takeover runs 1400ms and this beat ran 700ms,
+    // so the computer's whole turn happened underneath a full-frame overlay —
+    // the bezel went dark and came back, and the shot landed on the child's
+    // own deck, all while he was looking at the word HIT. Remove the
+    // `if (takeover) return` line and this test fails on the first assertion
+    // after the advance.
+    s().setReduceMotion(false)
+    renderHook(() => useComputerTurn(300))
+
+    act(() => s().fireAt(anEmptyCell()))
+    expect(s().takeover).not.toBeNull()
+    expect(s().game.turn).toBe('computer')
+
+    act(() => void vi.advanceTimersByTime(3000))
+    expect(s().game.player.shots).toHaveLength(0) // still hidden behind the takeover
+
+    act(() => s().dismissTakeover())
+    expect(s().game.player.shots).toHaveLength(0) // the beat starts only now
+    act(() => void vi.advanceTimersByTime(300))
+    expect(s().game.player.shots).toHaveLength(1)
+  })
+
   it('reschedules on each new computer turn, deterministically', () => {
     // Regression coverage for the freeze this fixed, adapted to the
     // one-shot-per-turn rule. The original bug: a hit left `phase` and `turn`
@@ -58,9 +85,16 @@ describe('useComputerTurn', () => {
     // it), so that specific unchanged-primitives case can no longer arise —
     // but the effect must still reliably reschedule turn after turn, not just
     // once. This drives two full player -> computer round trips and checks
-    // both computer shots land, regardless of hit or miss (which no longer
-    // matters to the turn rule, so no RNG rigging is needed to be
-    // deterministic here).
+    // both computer shots land.
+    //
+    // What is deterministic here is the RESCHEDULING, which holds whether the
+    // computer hits or misses. The shots themselves run on the unseeded
+    // `systemRng`, so this test does NOT pin the computer-side turn rule: if
+    // `applyShot` regressed to the old "a hit keeps the turn" house rule, this
+    // test would only notice on the runs where the RNG happened to land a hit
+    // (measured at roughly a coin flip). That rule is covered deterministically
+    // in src/core/game.test.ts — 'passes the turn back to the player after a
+    // computer hit' — and must stay there.
     renderHook(() => useComputerTurn(300))
 
     act(() => s().fireAt(anEmptyCell()))
