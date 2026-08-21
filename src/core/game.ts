@@ -82,8 +82,11 @@ export function startPlaying(g: GameState): GameState {
  * Applies one shot. A shot lands on the OPPOSING board: the player fires at
  * `computer`, the computer fires at `player`.
  *
- * Turn rule: a hit or sunk keeps the turn, a miss passes it. Firing at an
- * already-fired cell is a no-op that does not consume the turn.
+ * Turn rule: one shot per turn. The turn always passes to the other side once
+ * a shot resolves — whether it is a miss, a hit, or a shot that sinks a ship —
+ * matching official Battleship rules ("After a hit or a miss, your turn is
+ * over"). Firing at an already-fired cell is a no-op that does not consume
+ * the turn.
  */
 export function applyShot(g: GameState, by: Side, at: Coord): GameState {
   if (g.phase === 'over') throw new Error('applyShot: game is over')
@@ -98,7 +101,7 @@ export function applyShot(g: GameState, by: Side, at: Coord): GameState {
       ...g,
       computer: board,
       lastShot: { by, at, result: shot.result, shipId: shot.shipId },
-      turn: shot.result === 'miss' ? 'computer' : 'player',
+      turn: 'computer',
     }
 
     if (isFleetSunk(board)) {
@@ -114,7 +117,7 @@ export function applyShot(g: GameState, by: Side, at: Coord): GameState {
     ...g,
     player: board,
     lastShot: { by, at, result: shot.result, shipId: shot.shipId },
-    turn: shot.result === 'miss' ? 'player' : 'computer',
+    turn: 'player',
   }
 
   if (isFleetSunk(board)) {

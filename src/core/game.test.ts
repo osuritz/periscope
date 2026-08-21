@@ -92,7 +92,10 @@ describe('startPlaying', () => {
     // get phase 'playing' with the winner still set and every cell fired.
     let g = riggedGame()
     for (const c of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }]) {
-      g = applyShot(g, 'player', c)
+      // Each shot passes the turn away under the one-shot-per-turn rule, so
+      // hand it back before the next shot — simulating the computer's
+      // intervening turn, which this state-machine test doesn't model.
+      g = applyShot({ ...g, turn: 'player' }, 'player', c)
     }
     expect(g.phase).toBe('over')
     expect(() => startPlaying(g)).toThrow('startPlaying: not in setup')
@@ -107,12 +110,40 @@ describe('applyShot', () => {
     expect(g.lastShot).toEqual({ by: 'player', at: { x: 0, y: 0 }, result: 'hit', shipId: 'sub' })
   })
 
-  it('keeps the turn with the player after a hit', () => {
-    expect(applyShot(riggedGame(), 'player', { x: 0, y: 0 }).turn).toBe('player')
+  it('passes the turn to the computer after a hit', () => {
+    expect(applyShot(riggedGame(), 'player', { x: 0, y: 0 }).turn).toBe('computer')
   })
 
   it('passes the turn to the computer after a miss', () => {
     expect(applyShot(riggedGame(), 'player', { x: 5, y: 5 }).turn).toBe('computer')
+  })
+
+  it('passes the turn to the computer after a shot that sinks a ship, as long as the fleet survives', () => {
+    // sinking the tug (2 cells) does not end the game — the sub is still
+    // afloat — so this exercises the sunk-but-not-over branch specifically.
+    let g = applyShot(riggedGame(), 'player', { x: 0, y: 2 }) // hit on tug
+    g = { ...g, turn: 'player' } // simulate the computer's intervening turn
+    g = applyShot(g, 'player', { x: 0, y: 3 }) // sinks the tug
+    expect(g.lastShot?.result).toBe('sunk')
+    expect(g.phase).toBe('playing')
+    expect(g.turn).toBe('computer')
+  })
+
+  it('passes the turn back to the player after a computer hit', () => {
+    // The computer side of one-shot-per-turn, and the only deterministic
+    // coverage of it. Every other computer-side test either hands the turn
+    // back by hand before the next shot or ends the game on that shot, so
+    // reverting this branch to the old "a hit keeps the turn" house rule —
+    // the exact error that turned Sailor's modest edge into a ~93% loss rate
+    // for a five-year-old — passed the entire suite. The only test that
+    // noticed was useComputerTurn's, and only on the runs where its unseeded
+    // RNG happened to land a hit: roughly a coin flip.
+    let g = startPlaying(newGame('little', seededRng(1)))
+    g = { ...g, turn: 'computer', player: boardFrom(6, [p('tug', 0, 0, 'h', 2)]) }
+    const after = applyShot(g, 'computer', { x: 0, y: 0 })
+    expect(after.lastShot?.result).toBe('hit') // a hit, not a miss — the premise
+    expect(after.phase).toBe('playing') // and not a win, which sets turn its own way
+    expect(after.turn).toBe('player')
   })
 
   it('rejects a shot from the side whose turn it is not', () => {
@@ -146,7 +177,8 @@ describe('applyShot', () => {
   it('declares the player the winner when the computer fleet is destroyed', () => {
     let g = riggedGame()
     for (const c of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }]) {
-      g = applyShot(g, 'player', c)
+      // Hand the turn back before each shot — see the identical comment above.
+      g = applyShot({ ...g, turn: 'player' }, 'player', c)
     }
     expect(g.phase).toBe('over')
     expect(g.winner).toBe('player')
@@ -155,7 +187,7 @@ describe('applyShot', () => {
   it('refuses shots once the game is over', () => {
     let g = riggedGame()
     for (const c of [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 3 }]) {
-      g = applyShot(g, 'player', c)
+      g = applyShot({ ...g, turn: 'player' }, 'player', c)
     }
     expect(() => applyShot(g, 'player', { x: 5, y: 5 })).toThrow('applyShot: game is over')
   })
@@ -164,7 +196,7 @@ describe('applyShot', () => {
     let g = startPlaying(newGame('little', seededRng(1)))
     g = { ...g, turn: 'computer', player: boardFrom(6, [p('tug', 0, 0, 'h', 2)]) }
     g = applyShot(g, 'computer', { x: 0, y: 0 })
-    g = applyShot(g, 'computer', { x: 1, y: 0 })
+    g = applyShot({ ...g, turn: 'computer' }, 'computer', { x: 1, y: 0 })
     expect(g.winner).toBe('computer')
     expect(g.phase).toBe('over')
   })

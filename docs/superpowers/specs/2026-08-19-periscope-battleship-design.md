@@ -78,37 +78,61 @@ says `LOOK HERE`. This is a data swap, not a code fork.
 
 ### 4.4 Turn rule
 
-**A hit or a sunk keeps the turn; a miss passes it.** Firing at a cell that has
-already been fired at is a no-op that does not consume the turn, so a double-tap
-cannot cost a child their go. This was not specified by the design; it is a
-decision recorded here.
+**One shot per turn.** After a hit, a miss, or a shot that sinks a ship, the
+turn always passes to the other side — this matches official Hasbro Battleship
+rules ("You and your opponent will alternate turns, calling out one shot per
+turn... After a hit or a miss, your turn is over.") An earlier revision of this
+game gave the shooter another go on a hit or a sunk ship; that was a house
+rule, not Battleship, and has been corrected to match the official rules.
+Firing at a cell that has already been fired at is still a no-op that does not
+consume the turn, so a double-tap cannot cost a child their go — that part was
+never a rules question, only a UI protection, and is unaffected by this
+correction.
 
-It is the single rule that most shapes how the game feels, because it compounds
-whatever advantage a stronger opponent already has. Measured head-to-head win
-rates for a player firing uniformly at random among untried cells — the code's
-own model of a five-year-old, per the comment on `rookie.ts` — over 400 seeded
-games per cell, player moving first:
+Measured head-to-head win rates for a player firing uniformly at random among
+untried cells — the code's own model of a five-year-old, per the comment on
+`rookie.ts` — over 400 seeded games per cell, player moving first, under the
+one-shot-per-turn rule:
 
 | Board / tier | Player wins |
 |---|---|
 | Little Captain / Rookie | 57.0% |
-| Little Captain / Sailor | 7.0% |
+| Little Captain / Sailor | 10.3% |
 | Little Captain / Admiral | 1.0% |
-| Admiral / Rookie | 54.5% |
+| Admiral / Rookie | 52.8% |
 | Admiral / Sailor | 1.5% |
 | Admiral / Admiral | 0.0% |
 
-The solitaire numbers do not predict this, which is why the mechanism is worth
-stating plainly. Measured alone, clearing a 6x6 board takes Sailor 22.2 shots
-against a random player's 32.1 — an edge of only 1.45x. The turn rule compounds
-that edge: a hunting AI that lands a hit fires again immediately and keeps
-firing until it misses, converting one hit into a chain of shots. A random
-player chains nothing. A modest per-shot advantage therefore becomes a much
-larger per-turn one.
+These were re-measured after the turn-rule correction above, replacing an
+earlier table produced under the old "hit keeps the turn" house rule. **The
+numbers barely moved.** Little Captain / Rookie is identical to three
+significant figures (57.0%, since Rookie never benefits from a streak — it
+picks blind whether it just fired one shot or five); Admiral / Rookie, Little
+/ Admiral, Admiral / Sailor, and Admiral / Admiral are all within noise of
+their old values. The one real shift is Little Captain / Sailor, which rose
+from 7.0% to 10.3% — a genuine change (well outside the ~1.3-point sampling
+error at n=400) but still a long way from "largely dissolved": the child still
+loses to Sailor roughly nine games in ten.
 
-**Rookie is the default, and is the tier calibrated for the child** — a random
-player beats it slightly more often than not on both boards. On this evidence
-Sailor and Admiral are adult tiers.
+This is worth stating plainly because it contradicts the working theory that
+motivated re-measuring. Sailor's raw efficiency edge is real but modest —
+clearing a 6x6 board averages 22.2 shots for Sailor against 32.1 for a random
+player, a 1.45x advantage — and the theory was that the old streak rule was
+what inflated that modest edge into a 93% loss rate. If that were the whole
+story, removing the streak should have pulled the cliff back toward 50%. It
+did not. The better explanation is structural, not rule-specific: this is a
+strict alternating race to sink the other fleet first, and whichever side
+needs fewer shots to clear the board will very reliably finish those fewer
+shots before the slower side finishes its larger number — regardless of
+whether either side ever got two shots in a row. A 1.45x gap in shots-needed
+is enough on its own to produce a lopsided win rate in a race structured this
+way, streak or no streak.
+
+**Rookie remains the default, and the tier calibrated for the child** — a
+random player still beats it slightly more often than not on both boards.
+Sailor and Admiral remain adult tiers, now for a better-understood reason: the
+gap is inherent to how much more efficiently they search, not an artifact of
+a house rule that has since been removed.
 
 None of this is rubber-banding and none of it qualifies §4.2. The tiers stay
 honest and no hidden adjustment is made; this subsection records what the
@@ -193,9 +217,16 @@ target minimums. Every enemy-scope cell is at or above the 44px floor.
    drag-to-move and two-finger-tap-to-rotate; a 130px teal **READY** bar.
 3. **Game** — see §7 for the three layouts.
 4. **Feedback takeover** — full-frame, 26px inset border in the deep-shade
-   partner colour:
+   partner colour, with a **translucent** field (~80% opacity via
+   `color-mix(in srgb, <field colour> 80%, transparent)`) plus a light
+   `backdrop-filter: blur(6px)`, so the board reads through it instead of
+   vanishing. Only the field background is translucent — the glyph, `WORD`,
+   and caption stay on solid ink/field colours so nothing about the text
+   fades:
    - *Hit:* amber field, radial rings, `✕` at 210px inside a 300px tile, `HIT`
-     at 132px, chip reading `B4 · fire again`.
+     at 132px, chip reading `B4 · hit their cruiser` — the ship named per the
+     one-shot-per-turn correction (§4.4): the caption must never imply another
+     shot follows the hit.
    - *Miss:* hull field, concentric rings, `○` in a 280px 20px-stroke circle,
      `MISS` at 104px, chip reading `E7 · water only`.
    - *Sunk:* sunk field, 45° hatching, `☠` at 200px rotated −8°, `SUNK` at 96px,
@@ -208,9 +239,17 @@ target minimums. Every enemy-scope cell is at or above the 44px floor.
 
 ### 6.1 Feedback timing
 
-Takeovers auto-advance after **900ms** and are tap-to-skip. Under *reduce
+Takeovers auto-advance after **1400ms** and are tap-to-skip. Under *reduce
 motion* they are suppressed entirely and replaced by an inline announcement bar
 update. This was not specified by the design; it is a decision recorded here.
+
+Originally 900ms and fully opaque. Changed 2026-08-20 after the user watched
+his five-year-old play: 900ms didn't give the boy enough time to register the
+result word, and the opaque field hid the board entirely, which threw away
+information — seeing *where* the shot landed while the word is up tells a
+child more than a blank field does. The duration moved to 1400ms and the field
+became translucent (§6 item 4) so the board stays visible underneath. Both
+changes keep tap-to-skip, so an impatient child is never blocked by either.
 
 ## 7. Responsive layout
 
@@ -240,7 +279,13 @@ makes the game free, instant, offline-capable, and free of exposed API keys.
 A single typed table (`src/audio/lines.ts`) is the source of truth for both the
 spoken clip and the on-screen text, keyed by line ID and voice pack:
 
-- **Coordinates** — `coord.a1` … `coord.j10`, 100 entries.
+- **Coordinates** — `coord.a1` … `coord.j10`, 100 entries. Orientation matches
+  the physical Hasbro board (Figure 5 of the official rules): the letter names
+  the **row**, the number names the **column** — `coordLabel({x, y})` in
+  `src/core/coords.ts` is `LETTERS[y] + (x + 1)`. This is a correction from an
+  earlier revision that had the axes swapped; get it right before baking any
+  clips, since each key is a committed audio asset and a swapped axis would be
+  a wrong spoken coordinate that this table would not itself catch.
 - **Results** — `result.hit`, `result.miss`, `result.sunk.<shipId>`,
   `result.allSunk`.
 - **Turn** — `turn.yours`, `turn.mine`, `turn.thinking`.

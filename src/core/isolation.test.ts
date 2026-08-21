@@ -22,13 +22,16 @@ const ROOTS = ['src/core', 'src/ai']
 /** The one sanctioned exception, allowed by path rather than by token. */
 const SYSTEM_RNG_FILE = 'src/core/rng.ts'
 
+/** Source extensions the scan covers. Exported so a test can assert `.tsx` isn't silently skipped. */
+export const EXTENSIONS = ['.ts', '.tsx']
+
 /** Repo-relative paths, so a failure message names the file the way a human would. */
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(REPO_ROOT, dir), { withFileTypes: true }).flatMap((entry: Dirent) => {
     const path = `${dir}/${entry.name}`
     if (entry.isDirectory()) return sourceFiles(path)
-    if (!entry.name.endsWith('.ts')) return []
-    if (entry.name.endsWith('.test.ts')) return []
+    if (!EXTENSIONS.some((ext) => entry.name.endsWith(ext))) return []
+    if (entry.name.endsWith('.test.ts') || entry.name.endsWith('.test.tsx')) return []
     return [path]
   })
 }
@@ -109,5 +112,19 @@ describe('core and ai stay pure', () => {
     expect(hits).toHaveLength(2)
     expect(hits[0]).toContain('The only place Math.random is permitted')
     expect(hits[1]).toContain('export const systemRng')
+  })
+
+  it('scans .tsx files too', () => {
+    // The real guard: the extension filter must not silently skip .tsx.
+    expect(EXTENSIONS).toContain('.tsx')
+  })
+
+  it('forbids core from importing ai', () => {
+    for (const { path, text } of sources) {
+      if (!path.includes('/core/')) continue
+      for (const specifier of importSpecifiers(text)) {
+        expect(specifier.startsWith('../ai'), `${path} imports '${specifier}'`).toBe(false)
+      }
+    }
   })
 })

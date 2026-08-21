@@ -65,3 +65,52 @@ Recorded in spec §4.4 with the measured table. Player win rates against a rando
 Rookie 57.0% / 54.5%, Sailor 7.0% / 1.5%, Admiral 1.0% / 0.0%. Rookie is calibrated for the
 child; Sailor and Admiral are adult tiers. The title screen shows three face cards with 1/2/3
 pips, which reads as a gradient. Confirm that is intended before drawing them.
+
+---
+
+# Carry-over into Plan 3 (added at Plan 2 merge)
+
+Parked residuals from Plan 2's final re-review. Neither blocked that merge.
+
+## A. `playToTheEnd()` needs an iteration guard — do this first, it is one line
+
+`src/ui/screens/GameScreen.test.tsx` — the helper loops `while (s().game.phase === 'playing')`
+with no bound. Under a regression where a shot stops consuming the turn, it spins at 99% CPU
+forever instead of failing: a synchronous, unyieldable JS loop that no Vitest timeout can
+preempt. A reviewer hit this during mutation testing and had to `kill -9` the worker.
+
+The analogous pre-existing loop in `src/ui/store/gameStore.test.ts` ("plays a whole game to a
+winner without throwing") already guards with `guard++ < 500`. Match it.
+
+Why it matters more than it looks: turn-passing is exactly what Plan 2 changed (the official
+one-shot-per-turn rule), and Plan 3 splits `freshGame` so the placement screen can observe
+`phase === 'setup'` — both touch the machinery this loop depends on. A regression there should
+turn CI red, not hang it.
+
+## B. iPhone SE (375×667) needs scrolling to see the whole board
+
+Confirmed live: cell floored at 44px, gap 1px, 269px of grid content in a 95px panel, grid
+top-aligned so row A is visible at `scrollTop: 0` and row F is reachable by scrolling
+(`scrollHeight − clientHeight === 174`).
+
+This is arithmetic, not a bug — it cannot be closed without breaking one of: the 44px tap floor
+(a five-year-old's fingertip), the deck readout spec, or the announcement bar. iPad is the
+stated target device and is clean at every measured size. **A product decision for Plan 3**, not
+something to quietly "fix" by shrinking tap targets.
+
+## C. Deferred item 9 becomes reachable the moment Plan 3 starts
+
+`TurnBar` has no branch for `phase === 'setup'` and would silently read "THEIR TURN". It is
+currently unreachable only because `freshGame` bundles `startPlaying(newGame(...))`. Plan 3's
+placement screen must split those — and the instant it does, this surfaces on the placement
+screen. Handle it in the same task that does the split.
+
+## D. Two spec-conformance items to schedule
+
+- `src/ui/fonts.css` loads Bungee and Space Grotesk from `fonts.googleapis.com`. Spec §11 says
+  "no runtime third-party calls" and §8 wants the game offline-capable. Self-host before deploy.
+- `announcementText` returns a whole English sentence, but spec §4.3 says the voice pack governs
+  both audio and on-screen wording from one line table, and §8.1 composes clips by **line ID**
+  (`coord.g3`, `result.hit`, `result.sunk.tug`), not by rendered sentence. Plan 4 will need
+  `lines(pack, lineId)` with the sentence assembled from parts. `LastShot` already carries
+  everything needed — this is a refactor of one function, not a redesign.
