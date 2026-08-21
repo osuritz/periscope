@@ -19,13 +19,27 @@ function emptyCellLabel() {
 
 function playToTheEnd() {
   act(() => {
-    while (s().game.phase === 'playing') {
+    // Bounded the same way as gameStore.test.ts's 'plays a whole game to a
+    // winner' loop: a 6x6 board has 36 cells per side, so a real game ends
+    // well under 100 shots. Without this, a regression that stops a shot from
+    // consuming the turn (e.g. dropping the alreadyFired check from canFire)
+    // spins here forever at 100% CPU — a synchronous loop no Vitest timeout
+    // can preempt. The message on the assertion below is what makes that
+    // failure legible: without it, callers would instead see a confusing
+    // failure from whatever they assert next (e.g. a missing "dive again"
+    // button), with no hint that the game never actually finished.
+    let guard = 0
+    while (s().game.phase === 'playing' && guard++ < 500) {
       if (s().game.turn === 'player') {
         s().fireAt(allCoords(s().game.size).find((c) => s().canFire(c))!)
       } else {
         s().takeComputerTurn()
       }
     }
+    expect(
+      s().game.phase,
+      'playToTheEnd: game did not finish within 500 iterations',
+    ).toBe('over')
     s().dismissTakeover()
   })
 }

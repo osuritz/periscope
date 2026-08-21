@@ -116,7 +116,17 @@ describe('useComputerTurn', () => {
   it('stops once the game is over', () => {
     renderHook(() => useComputerTurn(300))
     act(() => {
-      while (s().game.phase === 'playing') {
+      // Bounded the same way as gameStore.test.ts's 'plays a whole game to a
+      // winner' loop: a 6x6 board has 36 cells per side, so a real game ends
+      // well under 100 shots. Without this, a regression that stops a shot
+      // from consuming the turn (e.g. dropping the alreadyFired check from
+      // canFire) spins here forever at 100% CPU — a synchronous loop no
+      // Vitest timeout can preempt. The message on the assertion below makes
+      // that failure legible: without it, the test would instead fail on the
+      // shot-count assertion further down with no hint the game never
+      // actually finished.
+      let guard = 0
+      while (s().game.phase === 'playing' && guard++ < 500) {
         if (s().game.turn === 'player') {
           const open = allCoords(s().game.size).filter((c) => s().canFire(c))
           s().fireAt(open[0]!)
@@ -125,6 +135,10 @@ describe('useComputerTurn', () => {
         }
       }
     })
+    expect(
+      s().game.phase,
+      'stops once the game is over: game did not finish within 500 iterations',
+    ).toBe('over')
     const shots = s().game.player.shots.length
     act(() => void vi.advanceTimersByTime(5000))
     expect(s().game.player.shots).toHaveLength(shots)
