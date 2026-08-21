@@ -129,6 +129,23 @@ describe('applyShot', () => {
     expect(g.turn).toBe('computer')
   })
 
+  it('passes the turn back to the player after a computer hit', () => {
+    // The computer side of one-shot-per-turn, and the only deterministic
+    // coverage of it. Every other computer-side test either hands the turn
+    // back by hand before the next shot or ends the game on that shot, so
+    // reverting this branch to the old "a hit keeps the turn" house rule —
+    // the exact error that turned Sailor's modest edge into a ~93% loss rate
+    // for a five-year-old — passed the entire suite. The only test that
+    // noticed was useComputerTurn's, and only on the runs where its unseeded
+    // RNG happened to land a hit: roughly a coin flip.
+    let g = startPlaying(newGame('little', seededRng(1)))
+    g = { ...g, turn: 'computer', player: boardFrom(6, [p('tug', 0, 0, 'h', 2)]) }
+    const after = applyShot(g, 'computer', { x: 0, y: 0 })
+    expect(after.lastShot?.result).toBe('hit') // a hit, not a miss — the premise
+    expect(after.phase).toBe('playing') // and not a win, which sets turn its own way
+    expect(after.turn).toBe('player')
+  })
+
   it('rejects a shot from the side whose turn it is not', () => {
     expect(() => applyShot(riggedGame(), 'computer', { x: 0, y: 0 })).toThrow('applyShot: not computer turn')
   })

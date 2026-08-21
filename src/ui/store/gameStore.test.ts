@@ -46,14 +46,20 @@ describe('gameStore', () => {
   })
 
   it('ignores a repeat tap on an already-fired cell', () => {
-    const at = anEmptyCell()
-    s().fireAt(at)
-    s().restart('little', 'rookie')
+    // Force the turn back after the hit, the way the isolation test below
+    // does: otherwise the turn guard is what makes the second tap inert and
+    // this says nothing about double-tap protection at all.
     const hit = aShipCell()
     s().fireAt(hit)
-    const after = s().game
+    useGameStore.setState({ game: { ...s().game, turn: 'player' } })
+
+    // Compared on the whole store, not just `game`: the engine returns the
+    // same `game` reference for a repeat shot either way, so `game` alone
+    // stays identical even with the guard gone — it is the takeover this
+    // would raise a second time that gives the missing guard away.
+    const before = useGameStore.getState()
     s().fireAt(hit)
-    expect(s().game).toBe(after)
+    expect(useGameStore.getState()).toBe(before)
   })
 
   it('reports canFire false for an already-fired cell, isolated from turn and phase', () => {
