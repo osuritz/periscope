@@ -8,20 +8,34 @@ export type TakeoverProps = {
   autoAdvanceMs?: number
 }
 
+// The full-frame field is translucent (§6.1) so the board reads through it —
+// only that background gets the color-mix treatment. FIELD stays solid and is
+// still used as-is for the caption chip's text colour, so nothing about the
+// word or caption fades.
 const FIELD = { hit: 'var(--amber)', miss: 'var(--hull)', sunk: 'var(--sunk)' } as const
+const FIELD_TRANSLUCENT = {
+  hit: 'color-mix(in srgb, var(--amber) 80%, transparent)',
+  miss: 'color-mix(in srgb, var(--hull) 80%, transparent)',
+  sunk: 'color-mix(in srgb, var(--sunk) 80%, transparent)',
+} as const
 const INK = { hit: 'var(--on-amber)', miss: 'var(--ink-2)', sunk: 'var(--on-sunk)' } as const
 const GLYPH = { hit: '✕', miss: '○', sunk: '☠' } as const
 const WORD = { hit: 'HIT', miss: 'MISS', sunk: 'SUNK' } as const
 
 /**
  * Spec §6.4 — the payoff the whole game exists for, at full frame. Auto-advances
- * after 900ms (§6.1) and is tap-to-skip, because a child who wants to keep
+ * after 1400ms (§6.1) and is tap-to-skip, because a child who wants to keep
  * playing should never have to wait for an animation to finish.
+ *
+ * The field is translucent, not opaque: watching an actual five-year-old play,
+ * he could still tell where the shot landed if the board stayed visible
+ * underneath the word, which a blank field couldn't offer. A backdrop blur
+ * keeps the board reading as *behind* the word instead of competing with it.
  *
  * Suppressed entirely under reduce-motion: the store simply never sets a
  * takeover, so this renders null.
  */
-export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 900 }: TakeoverProps) {
+export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 1400 }: TakeoverProps) {
   useEffect(() => {
     if (!takeover) return
     const id = setTimeout(onDismiss, autoAdvanceMs)
@@ -48,7 +62,9 @@ export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 900 
         inset: 0,
         zIndex: 10,
         border: 'none',
-        background: FIELD[result],
+        background: FIELD_TRANSLUCENT[result],
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         color: INK[result],
         boxShadow: `inset 0 0 0 26px ${INK[result]}`,
         display: 'flex',

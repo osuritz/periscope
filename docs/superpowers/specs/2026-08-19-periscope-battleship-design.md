@@ -193,7 +193,12 @@ target minimums. Every enemy-scope cell is at or above the 44px floor.
    drag-to-move and two-finger-tap-to-rotate; a 130px teal **READY** bar.
 3. **Game** — see §7 for the three layouts.
 4. **Feedback takeover** — full-frame, 26px inset border in the deep-shade
-   partner colour:
+   partner colour, with a **translucent** field (~80% opacity via
+   `color-mix(in srgb, <field colour> 80%, transparent)`) plus a light
+   `backdrop-filter: blur(6px)`, so the board reads through it instead of
+   vanishing. Only the field background is translucent — the glyph, `WORD`,
+   and caption stay on solid ink/field colours so nothing about the text
+   fades:
    - *Hit:* amber field, radial rings, `✕` at 210px inside a 300px tile, `HIT`
      at 132px, chip reading `B4 · fire again`.
    - *Miss:* hull field, concentric rings, `○` in a 280px 20px-stroke circle,
@@ -208,9 +213,17 @@ target minimums. Every enemy-scope cell is at or above the 44px floor.
 
 ### 6.1 Feedback timing
 
-Takeovers auto-advance after **900ms** and are tap-to-skip. Under *reduce
+Takeovers auto-advance after **1400ms** and are tap-to-skip. Under *reduce
 motion* they are suppressed entirely and replaced by an inline announcement bar
 update. This was not specified by the design; it is a decision recorded here.
+
+Originally 900ms and fully opaque. Changed 2026-08-20 after the user watched
+his five-year-old play: 900ms didn't give the boy enough time to register the
+result word, and the opaque field hid the board entirely, which threw away
+information — seeing *where* the shot landed while the word is up tells a
+child more than a blank field does. The duration moved to 1400ms and the field
+became translucent (§6 item 4) so the board stays visible underneath. Both
+changes keep tap-to-skip, so an impatient child is never blocked by either.
 
 ## 7. Responsive layout
 

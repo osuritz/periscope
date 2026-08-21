@@ -28,12 +28,14 @@ describe('Takeover', () => {
     expect(screen.getByText(/tug/)).toBeInTheDocument()
   })
 
-  it('auto-advances after 900ms', () => {
+  it('auto-advances after 1400ms', () => {
     vi.useFakeTimers()
     const onDismiss = vi.fn()
     render(<TakeoverView takeover={{ result: 'hit', at: { x: 1, y: 3 } }} onDismiss={onDismiss} />)
     expect(onDismiss).not.toHaveBeenCalled()
     act(() => void vi.advanceTimersByTime(900))
+    expect(onDismiss).not.toHaveBeenCalled()
+    act(() => void vi.advanceTimersByTime(500))
     expect(onDismiss).toHaveBeenCalledOnce()
   })
 
