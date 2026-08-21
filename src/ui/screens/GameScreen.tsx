@@ -5,7 +5,7 @@ import Grid from '../components/Grid'
 import LastShotChip from '../components/LastShotChip'
 import TakeoverView from '../components/Takeover'
 import TurnBar from '../components/TurnBar'
-import { useCompact, useLayout, useViewportHeight } from '../layout'
+import { useCompact, useLayout, useViewportHeight, type LayoutName } from '../layout'
 import { deckSizing, scopeSizing } from '../sizing'
 import { useGameStore } from '../store/gameStore'
 import { useComputerTurn } from '../store/useComputerTurn'
@@ -19,22 +19,64 @@ import { useComputerTurn } from '../store/useComputerTurn'
 const LAST_SHOT_CHIP_MIN_HEIGHT = 39
 const LAST_SHOT_CHIP_MIN_HEIGHT_COMPACT = 24
 
+/** The two rows that come and go: the DIVE AGAIN button and, under reduce
+ * motion, the announcement bar. Both are fixed-height by their own styles. */
+const GAME_OVER_BUTTON_HEIGHT = 96
+const ANNOUNCEMENT_BAR_HEIGHT = 80
+
 /**
- * Everything around the scope grid in the `landscape` layout — main's padding
- * and row-gaps, the turn bar, the panel's header/footer/padding/border/gaps —
- * measured with real viewport emulation (see task-10-report.md) rather than
- * summed from the styles below, since line-height and font-metric rounding
- * make the two disagree by a few px. Kept a little conservative (the measured
- * available height ran ~2-3px ahead of what `scopeSizing` demanded) so normal
- * rendering variance doesn't reopen the clip this exists to close.
+ * Everything around the scope grid — main's padding and row gaps, the turn
+ * bar, the deck strip where there is one, and the scope panel's own
+ * header/footer/padding/border/gaps — measured with real viewport emulation
+ * rather than summed from the styles below, since line-height and font-metric
+ * rounding make the two disagree by a few px. Each number is measured with
+ * neither optional row on screen; `optionalRowOverhead` adds those.
  *
- * Only `landscape` gets this treatment: it is the one layout where the scope
- * and deck panels sit side by side, so nothing else competes with the scope
- * panel for vertical space and a single constant is accurate. `portrait` and
- * `phone` already fit at their required viewports without it.
+ * Measured: landscape 285 at 1024×768, portrait 502 at 768×907, 768×954,
+ * 768×1024 and 600×900, phone 540 at 390×844. Each is kept a few px
+ * conservative so normal rendering variance — a font swapping in late, a
+ * line-height rounding differently — cannot reopen the clip this exists to
+ * close; a couple of px of cell size is a much cheaper error than a board with
+ * its top row hidden.
+ *
+ * Two known limits, both deliberate. The numbers assume Little Captain's deck
+ * strip (Admiral's is ~13px shorter, and unreachable today), and they assume
+ * the scope header fits on one line — below about 380px of width "SCOPE —
+ * THEIR SEA" wraps and costs another 32px, which is part of why an iPhone SE
+ * cannot show a 6×6 board at the 44px tap floor no matter what this returns
+ * (see `scopeSizing`, and the overflow handling below).
  */
-function landscapeChromeOverhead(compact: boolean): number {
-  return compact ? 118 : 292
+function chromeOverhead(layout: LayoutName, compact: boolean): number {
+  if (layout === 'landscape') return compact ? 118 : 292
+  if (layout === 'portrait') return 506
+  return 544
+}
+
+/** The row gap in `main`. Read by the overhead maths as well as the style. */
+function mainRowGap(layout: LayoutName, compact: boolean): number {
+  return compact ? 6 : layout === 'phone' ? 10 : 14
+}
+
+/**
+ * What the optional rows cost the scope on top of `chromeOverhead`.
+ *
+ * Charged as height plus one row gap each. That is very slightly pessimistic
+ * where the row lands in a template row that `main` already reserves (and
+ * already gaps) while empty — but the error is one 14px gap in the direction
+ * that cannot clip anything, and the alternative is arithmetic that silently
+ * depends on how many rows `gridTemplateRows` below happens to define.
+ *
+ * The phone layout's announcement bar is always on screen and is therefore
+ * already inside `chromeOverhead`, not here.
+ */
+function optionalRowOverhead(
+  layout: LayoutName,
+  compact: boolean,
+  rows: { announcementBar: boolean; gameOver: boolean },
+): number {
+  const gap = mainRowGap(layout, compact)
+  const bar = rows.announcementBar && layout !== 'phone' ? ANNOUNCEMENT_BAR_HEIGHT + gap : 0
+  return bar + (rows.gameOver ? GAME_OVER_BUTTON_HEIGHT + gap : 0)
 }
 
 /**
@@ -52,6 +94,7 @@ export default function GameScreen() {
   const game = useGameStore((s) => s.game)
   const mode = useGameStore((s) => s.mode)
   const takeover = useGameStore((s) => s.takeover)
+  const reduceMotion = useGameStore((s) => s.reduceMotion)
   const fireAt = useGameStore((s) => s.fireAt)
   const restart = useGameStore((s) => s.restart)
   const dismissTakeover = useGameStore((s) => s.dismissTakeover)
@@ -59,12 +102,31 @@ export default function GameScreen() {
   useComputerTurn()
 
   const myTurn = game.phase === 'playing' && game.turn === 'player'
-  const fit =
-    layout === 'landscape'
-      ? { rows: game.size, availableHeight: viewportHeight - landscapeChromeOverhead(compact) }
-      : undefined
-  const scope = scopeSizing(layout, mode, fit)
+
+  // Spec §7 puts the bar on `phone` only, but §6.1 makes it the reduce-motion
+  // REPLACEMENT for the takeover — so without this the reduce-motion setting
+  // would leave a tablet player with no result feedback at all.
+  const announcementBar = layout === 'phone' || reduceMotion
+  const gameOverRow = game.phase === 'over'
+
+  // Every layout gets the fit, not just landscape: a real iPad in portrait
+  // Safari is ~954px tall, not the spec's 1024, and the spec's 72px cells
+  // overflowed it by 10px. The row gap and the two optional rows are part of
+  // the same sum — the DIVE AGAIN button clipped 43px off the final board at
+  // 1024×768, at the moment that board matters most.
+  const availableHeight =
+    viewportHeight -
+    chromeOverhead(layout, compact) -
+    optionalRowOverhead(layout, compact, { announcementBar, gameOver: gameOverRow })
+  const scope = scopeSizing(layout, mode, { rows: game.size, availableHeight })
   const deck = deckSizing(layout, mode)
+
+  // `scopeSizing` stops at the 44px tap floor even when that still overflows —
+  // a 6×6 board does not fit an iPhone SE's 667px alongside this much chrome.
+  // Centring what overflows puts its top rows above the scroll origin, where
+  // they are unreachable; top-aligning them keeps every cell reachable by
+  // scrolling the panel.
+  const scopeOverflows = game.size * scope.cell + (game.size - 1) * scope.gap > availableHeight
 
   const scopePanel = (
     <section
@@ -118,7 +180,7 @@ export default function GameScreen() {
             alignItems: 'center',
           }}
         >
-          <LastShotChip lastShot={game.lastShot} compact={compact} />
+          <LastShotChip shot={game.computer.shots.at(-1) ?? null} compact={compact} />
         </span>
       </header>
 
@@ -127,7 +189,7 @@ export default function GameScreen() {
           flex: 1,
           minHeight: 0,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: scopeOverflows ? 'flex-start' : 'center',
           justifyContent: 'center',
           overflow: 'auto',
         }}
@@ -184,7 +246,7 @@ export default function GameScreen() {
     </section>
   )
 
-  const gameOver = game.phase === 'over' && (
+  const gameOver = gameOverRow && (
     <button
       type="button"
       onClick={() => restart()}
@@ -212,7 +274,7 @@ export default function GameScreen() {
           boxSizing: 'border-box',
           padding: compact ? 6 : layout === 'phone' ? 14 : 20,
           display: 'grid',
-          gap: compact ? 6 : layout === 'phone' ? 10 : 14,
+          gap: mainRowGap(layout, compact),
           gridTemplateRows:
             layout === 'landscape' ? 'auto minmax(0, 1fr) auto' : 'auto minmax(0, 1fr) auto auto',
           gridTemplateColumns: 'minmax(0, 1fr)',
@@ -246,7 +308,7 @@ export default function GameScreen() {
           </>
         )}
 
-        {layout === 'phone' && <AnnouncementBar lastShot={game.lastShot} />}
+        {announcementBar && <AnnouncementBar lastShot={game.lastShot} />}
         {gameOver}
       </main>
 
