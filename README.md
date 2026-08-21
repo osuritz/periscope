@@ -17,7 +17,9 @@ Periscope is a single-player Battleship game built with React + TypeScript + Vit
 - Sailor — hunt/target with orthogonal neighbour queue.
 - Admiral — parity-restricted hunt + probability-density search over legal placements.
 
-**Turn rule:** hit or sunk keeps the turn; miss passes it. Firing an already-fired cell is a no-op that does not consume a turn.
+**Turn rule:** exactly one shot per turn, always — a hit does not earn another shot. Firing an
+already-fired cell is a no-op that does not consume a turn. See `docs/BATTLESHIP-RULES.md` for
+the authority on this and other game mechanics.
 
 Stack: React 19, Vite, TypeScript, Tailwind CSS 4, Zustand for UI-only state, Vitest + Testing Library.
 

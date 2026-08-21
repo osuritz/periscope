@@ -49,7 +49,7 @@ export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 1400
     result === 'sunk'
       ? `${coordLabel(at)} · sank their ${shipId ?? 'ship'}`
       : result === 'hit'
-        ? `${coordLabel(at)} · fire again`
+        ? `${coordLabel(at)} · hit their ${shipId ?? 'ship'}`
         : `${coordLabel(at)} · water only`
 
   return (

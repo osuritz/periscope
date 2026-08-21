@@ -224,7 +224,9 @@ target minimums. Every enemy-scope cell is at or above the 44px floor.
    and caption stay on solid ink/field colours so nothing about the text
    fades:
    - *Hit:* amber field, radial rings, `✕` at 210px inside a 300px tile, `HIT`
-     at 132px, chip reading `B4 · fire again`.
+     at 132px, chip reading `B4 · hit their cruiser` — the ship named per the
+     one-shot-per-turn correction (§4.4): the caption must never imply another
+     shot follows the hit.
    - *Miss:* hull field, concentric rings, `○` in a 280px 20px-stroke circle,
      `MISS` at 104px, chip reading `E7 · water only`.
    - *Sunk:* sunk field, 45° hatching, `☠` at 200px rotated −8°, `SUNK` at 96px,
