@@ -2,9 +2,8 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useComputerTurn } from './useComputerTurn'
 import { useGameStore } from './gameStore'
-import { allCoords, coordKey } from '../../core/coords'
+import { allCoords } from '../../core/coords'
 import { cellState } from '../../core/board'
-import { placementCells } from '../../core/placement'
 
 const s = () => useGameStore.getState()
 
@@ -34,55 +33,50 @@ describe('useComputerTurn', () => {
     expect(s().game.player.shots).toHaveLength(1)
   })
 
-  it('keeps firing on its own turn until it misses', () => {
+  it('fires exactly one shot on its turn, then hands the turn back (or ends the game)', () => {
+    // Official rule: one shot per turn, win or lose — a hit no longer keeps
+    // the turn (see src/core/game.ts). So a single 300ms beat is always
+    // enough for the computer's turn to resolve one way or the other; this
+    // loop no longer needs to run more than once in practice, but stays
+    // bounded rather than asserting exactly one iteration, since the exact
+    // shot count depends on unseeded RNG.
     renderHook(() => useComputerTurn(300))
     act(() => s().fireAt(anEmptyCell()))
     for (let i = 0; i < 40 && s().game.turn === 'computer'; i++) {
       act(() => void vi.advanceTimersByTime(300))
     }
     expect(s().game.turn === 'player' || s().game.phase === 'over').toBe(true)
+    expect(s().game.player.shots).toHaveLength(1)
   })
 
-  it('reschedules and fires again after a hit that keeps the turn, deterministically', () => {
-    // Regression test for the freeze this fixed: a hit leaves `phase` and
-    // `turn` both unchanged, so an effect keyed on those primitives never
-    // re-runs and the next beat is never scheduled. Relying on RNG to land a
-    // first-shot hit is a coin flip (or worse) depending on tier and mode, so
-    // instead we force it via the store's public Zustand `setState`: restrict
-    // `game.player.shots` (which `untriedCells` derives from) to already
-    // cover every cell except one whole ship. `rookie`'s uniformly-random pick
-    // among untried cells then has nowhere to land but that ship — a
-    // guaranteed hit, not a lucky one.
+  it('reschedules on each new computer turn, deterministically', () => {
+    // Regression coverage for the freeze this fixed, adapted to the
+    // one-shot-per-turn rule. The original bug: a hit left `phase` and `turn`
+    // both unchanged, so an effect keyed on those primitives never re-ran and
+    // the next beat was never scheduled. Under the new rule every actual shot
+    // changes `turn` or `phase` (a hit now passes the turn instead of keeping
+    // it), so that specific unchanged-primitives case can no longer arise —
+    // but the effect must still reliably reschedule turn after turn, not just
+    // once. This drives two full player -> computer round trips and checks
+    // both computer shots land, regardless of hit or miss (which no longer
+    // matters to the turn rule, so no RNG rigging is needed to be
+    // deterministic here).
     renderHook(() => useComputerTurn(300))
 
-    const game = s().game
-    const ship = game.player.placements[0]!
-    const shipCells = new Set(placementCells(ship).map(coordKey))
-    const restrictedShots = allCoords(game.size)
-      .filter((c) => !shipCells.has(coordKey(c)))
-      .map((at) => ({ at, result: 'miss' as const }))
-
-    act(() => {
-      useGameStore.setState({
-        game: {
-          ...game,
-          phase: 'playing',
-          turn: 'computer',
-          player: { ...game.player, shots: restrictedShots },
-        },
-      })
-    })
-
-    act(() => void vi.advanceTimersByTime(300))
-    // The forced shot can only have landed on the ship: a hit, which keeps
-    // the turn with the computer.
+    act(() => s().fireAt(anEmptyCell()))
     expect(s().game.turn).toBe('computer')
-    expect(s().game.player.shots).toHaveLength(restrictedShots.length + 1)
-
     act(() => void vi.advanceTimersByTime(300))
-    // With the bug, this second beat is never scheduled and the assertion
-    // below fails because no second shot ever lands.
-    expect(s().game.player.shots).toHaveLength(restrictedShots.length + 2)
+    expect(s().game.player.shots).toHaveLength(1)
+
+    if (s().game.phase !== 'playing') return // the computer's first shot won; nothing left to reschedule
+    expect(s().game.turn).toBe('player')
+
+    act(() => s().fireAt(anEmptyCell()))
+    expect(s().game.turn).toBe('computer')
+    act(() => void vi.advanceTimersByTime(300))
+    // With the old bug, this second beat would never be scheduled and the
+    // shot count below would stay stuck at 1.
+    expect(s().game.player.shots).toHaveLength(2)
   })
 
   it('stops once the game is over', () => {

@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { coordLabel, inBounds, coordEquals, coordKey, orthogonalNeighbors, allCoords } from './coords'
 
 describe('coordLabel', () => {
-  it('renders column letter and 1-based row', () => {
+  it('renders row letter and 1-based column, matching the physical board', () => {
     expect(coordLabel({ x: 0, y: 0 })).toBe('A1')
-    expect(coordLabel({ x: 2, y: 6 })).toBe('C7')
+    expect(coordLabel({ x: 2, y: 6 })).toBe('G3')
     expect(coordLabel({ x: 9, y: 9 })).toBe('J10')
   })
 

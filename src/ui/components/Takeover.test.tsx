@@ -14,7 +14,7 @@ describe('Takeover', () => {
   it('shouts HIT with the coordinate', () => {
     render(<TakeoverView takeover={{ result: 'hit', at: { x: 1, y: 3 } }} onDismiss={() => {}} />)
     expect(screen.getByText('HIT')).toBeInTheDocument()
-    expect(screen.getByText(/B4/)).toBeInTheDocument()
+    expect(screen.getByText(/D2/)).toBeInTheDocument()
   })
 
   it('shouts MISS', () => {

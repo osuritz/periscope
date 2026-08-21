@@ -4,8 +4,13 @@ export type Coord = { x: number; y: number }
 const LETTERS = 'ABCDEFGHIJ'
 
 /**
- * {x:2, y:6} -> "C7". Spoken aloud and shown in the "last shot" chip, and
+ * {x:2, y:6} -> "G3". Spoken aloud and shown in the "last shot" chip, and
  * used to key pre-baked audio clips (`coord.a1` .. `coord.j10`).
+ *
+ * Matches the physical board (Hasbro's official rules, Figure 5): letters run
+ * down the left side and name the ROW (`y`); numbers run across the top and
+ * name the COLUMN (`x`, 1-based). "D-4" is row D, column 4 — not the other
+ * way around.
  *
  * Precondition: both `x` and `y` must be in `0..9` (labels only ever exist
  * for a 10x10 board). Throws a RangeError otherwise rather than returning a
@@ -16,7 +21,7 @@ export function coordLabel(c: Coord): string {
   if (c.x < 0 || c.x > 9 || c.y < 0 || c.y > 9) {
     throw new RangeError(`coordLabel: coord out of range {x:${c.x}, y:${c.y}}`)
   }
-  return `${LETTERS[c.x]}${c.y + 1}`
+  return `${LETTERS[c.y]}${c.x + 1}`
 }
 
 export function inBounds(c: Coord, size: number): boolean {

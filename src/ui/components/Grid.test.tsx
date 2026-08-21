@@ -34,7 +34,7 @@ describe('Grid', () => {
   it('reports the coordinate that was tapped', async () => {
     const onFire = vi.fn()
     render(<Grid board={fixture()} reveal={false} sizing={{ cell: 72, gap: 8 }} onFire={onFire} label="their sea" />)
-    await userEvent.click(screen.getByRole('button', { name: 'C6, unknown' }))
+    await userEvent.click(screen.getByRole('button', { name: 'F3, unknown' }))
     expect(onFire).toHaveBeenCalledWith({ x: 2, y: 5 })
   })
 
@@ -44,8 +44,8 @@ describe('Grid', () => {
     b = fire(b, { x: 0, y: 2 }).board
     b = fire(b, { x: 0, y: 3 }).board
     render(<Grid board={b} reveal={false} sizing={{ cell: 72, gap: 8 }} onFire={() => {}} label="their sea" />)
-    expect(screen.getByRole('button', { name: 'A3, sunk' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'A4, sunk' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'C1, sunk' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'D1, sunk' })).toBeInTheDocument()
   })
 
   it('lays out as a square grid at the requested size', () => {

@@ -6,15 +6,17 @@ import { useGameStore } from './gameStore'
  * it the computer's shots land instantly and a five-year-old cannot tell what
  * just happened to his fleet.
  *
- * A hit keeps the turn, so the computer may fire several times running. The
- * effect depends on the `game` object itself, not its individual primitive
- * fields: `set()` produces a fresh `game` reference on every shot, including
- * a hit that leaves `phase` and `turn` unchanged, so keying off `game` is what
- * makes the effect re-run and reschedule the next beat. Selecting `phase` and
- * `turn` as separate primitives would miss exactly that case, since Zustand's
- * selector hooks only re-render when the *selected* value changes under
- * `Object.is` — a hit-that-keeps-the-turn changes neither, so the effect would
- * never be reconsidered and the computer's turn would stall for good.
+ * One shot per turn (official rules, `core/game.ts`): the turn always passes
+ * after a shot resolves, hit or miss, so the computer fires once per turn
+ * here, never a streak. The effect still depends on the `game` object itself,
+ * not its individual primitive fields: `set()` produces a fresh `game`
+ * reference on every shot, and keying off `game` — rather than selecting
+ * `phase` and `turn` as separate primitives, which only re-render on a
+ * genuine `Object.is` change — is what previously fixed a freeze where a
+ * shot left both primitives unchanged. That exact case can no longer arise
+ * now that every shot changes `turn` or `phase`, but the dependency stays on
+ * `game` rather than being narrowed back down, since it remains correct and
+ * this effect is not a place to be clever twice.
  */
 export function useComputerTurn(delayMs = 700): void {
   const game = useGameStore((s) => s.game)

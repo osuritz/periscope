@@ -10,7 +10,7 @@ describe('LastShotChip', () => {
 
   it('names the coordinate and marks a hit', () => {
     render(<LastShotChip lastShot={{ by: 'player', at: { x: 2, y: 6 }, result: 'hit', shipId: 'sub' }} />)
-    expect(screen.getByText(/C7/)).toBeInTheDocument()
+    expect(screen.getByText(/G3/)).toBeInTheDocument()
     expect(screen.getByText(/✕/)).toBeInTheDocument()
   })
 

@@ -26,10 +26,10 @@ describe('gameStore', () => {
     expect(s().game.player.placements).toHaveLength(3)
   })
 
-  it('keeps the turn after a hit', () => {
+  it('passes the turn after a hit', () => {
     s().fireAt(aShipCell())
     expect(s().game.lastShot?.result).not.toBe('miss')
-    expect(s().game.turn).toBe('player')
+    expect(s().game.turn).toBe('computer')
   })
 
   it('hands the turn over after a miss', () => {
@@ -57,11 +57,13 @@ describe('gameStore', () => {
   })
 
   it('reports canFire false for an already-fired cell, isolated from turn and phase', () => {
-    // A hit keeps the turn with the player and leaves phase 'playing', so
-    // unlike the miss-based canFire test below, only the alreadyFired guard
-    // itself can be responsible for the false here.
+    // A hit now passes the turn away, so force it back to 'player' after
+    // firing — unlike the miss-based canFire test below, this isolates the
+    // alreadyFired guard itself as the reason for the false, rather than the
+    // turn guard.
     const hit = aShipCell()
     s().fireAt(hit)
+    useGameStore.setState({ game: { ...s().game, turn: 'player' } })
     expect(s().game.turn).toBe('player')
     expect(s().game.phase).toBe('playing')
     expect(s().canFire(hit)).toBe(false)

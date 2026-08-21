@@ -9,12 +9,12 @@ describe('announcementText', () => {
 
   it('reads a player hit as the coordinate then the result', () => {
     expect(announcementText({ by: 'player', at: { x: 2, y: 6 }, result: 'hit', shipId: 'sub' })).toBe(
-      'C7… HIT!',
+      'G3… HIT!',
     )
   })
 
   it('reads a player miss', () => {
-    expect(announcementText({ by: 'player', at: { x: 4, y: 6 }, result: 'miss' })).toBe('E7… miss.')
+    expect(announcementText({ by: 'player', at: { x: 4, y: 6 }, result: 'miss' })).toBe('G5… miss.')
   })
 
   it('names the ship on a sink', () => {
@@ -37,7 +37,7 @@ describe('announcementText', () => {
 
   it('reads a computer miss', () => {
     expect(announcementText({ by: 'computer', at: { x: 4, y: 6 }, result: 'miss' })).toBe(
-      'E7… they missed!',
+      'G5… they missed!',
     )
   })
 })
@@ -45,7 +45,7 @@ describe('announcementText', () => {
 describe('AnnouncementBar', () => {
   it('shows the current line', () => {
     render(<AnnouncementBar lastShot={{ by: 'player', at: { x: 2, y: 6 }, result: 'hit', shipId: 'sub' }} />)
-    expect(screen.getByText(/C7… HIT!/)).toBeInTheDocument()
+    expect(screen.getByText(/G3… HIT!/)).toBeInTheDocument()
   })
 
   it('announces politely rather than interrupting', () => {
