@@ -135,6 +135,57 @@ describe('App shell', () => {
     expect(screen.getByRole('dialog', { name: /parent settings/i })).toBeInTheDocument()
   })
 
+  it('opens parent settings from a three-second keyboard hold', () => {
+    render(<App />)
+    const gear = screen.getByRole('button', { name: /hold for parent settings/i })
+
+    gear.focus()
+    fireEvent.keyDown(gear, { key: 'Enter' })
+    act(() => void vi.advanceTimersByTime(2999))
+    expect(screen.queryByRole('dialog', { name: /parent settings/i })).toBeNull()
+
+    act(() => void vi.advanceTimersByTime(1))
+    expect(screen.getByRole('dialog', { name: /parent settings/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /close settings/i })).toHaveFocus()
+  })
+
+  it('closes parent settings with Escape and restores focus to the gear', () => {
+    render(<App />)
+    const gear = screen.getByRole('button', { name: /hold for parent settings/i })
+
+    fireEvent.pointerDown(gear)
+    act(() => void vi.advanceTimersByTime(3000))
+    expect(screen.getByRole('button', { name: /close settings/i })).toHaveFocus()
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+
+    expect(screen.queryByRole('dialog', { name: /parent settings/i })).toBeNull()
+    expect(gear).toHaveFocus()
+
+    fireEvent.keyDown(gear, { key: ' ' })
+    act(() => void vi.advanceTimersByTime(3000))
+    expect(screen.getByRole('dialog', { name: /parent settings/i })).toBeInTheDocument()
+  })
+
+  it('keeps Tab focus inside parent settings while it is open', () => {
+    render(<App />)
+    const gear = screen.getByRole('button', { name: /hold for parent settings/i })
+    fireEvent.pointerDown(gear)
+    act(() => void vi.advanceTimersByTime(3000))
+
+    const close = screen.getByRole('button', { name: /close settings/i })
+    const reset = screen.getByRole('button', { name: /reset game/i })
+    expect(close).toHaveFocus()
+
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    expect(reset).toHaveFocus()
+
+    fireEvent.keyDown(reset, { key: 'Tab' })
+    expect(close).toHaveFocus()
+  })
+
   it('routes an over game to the surfaced screen', () => {
     act(() => {
       s().restart('little', 'rookie')

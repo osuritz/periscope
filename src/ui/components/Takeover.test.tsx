@@ -56,6 +56,15 @@ describe('Takeover', () => {
     expect(onDismiss).toHaveBeenCalledOnce()
   })
 
+  it('dismisses early with Escape', () => {
+    const onDismiss = vi.fn()
+    render(<TakeoverView takeover={{ result: 'hit', at: { x: 1, y: 3 } }} onDismiss={onDismiss} />)
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(onDismiss).toHaveBeenCalledOnce()
+  })
+
   it('announces the result assertively', () => {
     render(<TakeoverView takeover={{ result: 'hit', at: { x: 1, y: 3 } }} onDismiss={() => {}} />)
     expect(screen.getByRole('alert')).toHaveTextContent('HIT')

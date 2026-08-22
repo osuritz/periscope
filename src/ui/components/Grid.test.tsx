@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Grid from './Grid'
 import { boardFrom, fire } from '../../core/board'
@@ -36,6 +36,22 @@ describe('Grid', () => {
     render(<Grid board={fixture()} reveal={false} sizing={{ cell: 72, gap: 8 }} onFire={onFire} label="their sea" />)
     await userEvent.click(screen.getByRole('button', { name: 'F3, unknown' }))
     expect(onFire).toHaveBeenCalledWith({ x: 2, y: 5 })
+  })
+
+  it('uses arrow keys to move one tab stop around the firing grid', () => {
+    render(<Grid board={fixture()} reveal={false} sizing={{ cell: 72, gap: 8 }} onFire={() => {}} label="their sea" />)
+    const a1 = screen.getByRole('button', { name: 'A1, unknown' })
+    const a2 = screen.getByRole('button', { name: 'A2, unknown' })
+
+    expect(a1).toHaveAttribute('tabIndex', '0')
+    expect(a2).toHaveAttribute('tabIndex', '-1')
+
+    a1.focus()
+    fireEvent.keyDown(a1, { key: 'ArrowRight' })
+
+    expect(a2).toHaveFocus()
+    expect(a1).toHaveAttribute('tabIndex', '-1')
+    expect(a2).toHaveAttribute('tabIndex', '0')
   })
 
   it('renders every cell of a sunk ship as sunk, not just the last one hit', async () => {
