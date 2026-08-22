@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { BoardMode } from '../../core/fleet'
 import type { Tier } from '../../ai/types'
 import { fleetFor } from '../../core/fleet'
@@ -50,16 +50,26 @@ export default function TitleScreen() {
   const openSettings = useGameStore((s) => s.openSettings)
   const setVolume = useGameStore((s) => s.setVolume)
   const holdTimer = useRef<number | null>(null)
+  const settingsButton = useRef<HTMLButtonElement>(null)
+  const wasSettingsOpen = useRef(settingsOpen)
 
   const startHold = () => {
-    stopHold()
-    holdTimer.current = window.setTimeout(openSettings, 3000)
+    if (holdTimer.current !== null) return
+    holdTimer.current = window.setTimeout(() => {
+      holdTimer.current = null
+      openSettings()
+    }, 3000)
   }
   const stopHold = () => {
     if (holdTimer.current === null) return
     window.clearTimeout(holdTimer.current)
     holdTimer.current = null
   }
+
+  useEffect(() => {
+    if (wasSettingsOpen.current && !settingsOpen) settingsButton.current?.focus()
+    wasSettingsOpen.current = settingsOpen
+  }, [settingsOpen])
 
   return (
     <main
@@ -102,12 +112,23 @@ export default function TitleScreen() {
           PERISCOPE
         </h1>
         <button
+          ref={settingsButton}
           type="button"
           aria-label="hold for parent settings"
           onPointerDown={startHold}
           onPointerUp={stopHold}
           onPointerCancel={stopHold}
           onPointerLeave={stopHold}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            startHold()
+          }}
+          onKeyUp={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            stopHold()
+          }}
           style={{
             marginLeft: 'auto',
             width: 58,

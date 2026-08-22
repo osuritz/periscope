@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { coordLabel } from '../../core/coords'
+import { useKeyboard } from '../hooks/useKeyboard'
 import type { Takeover } from '../store/gameStore'
 
 export type TakeoverProps = {
@@ -36,6 +37,8 @@ const WORD = { hit: 'HIT', miss: 'MISS', sunk: 'SUNK' } as const
  * takeover, so this renders null.
  */
 export default function TakeoverView({ takeover, onDismiss, autoAdvanceMs = 1400 }: TakeoverProps) {
+  useKeyboard({ escape: onDismiss }, { enabled: Boolean(takeover) })
+
   useEffect(() => {
     if (!takeover) return
     const id = setTimeout(onDismiss, autoAdvanceMs)

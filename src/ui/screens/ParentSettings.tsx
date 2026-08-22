@@ -1,3 +1,5 @@
+import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useKeyboard } from '../hooks/useKeyboard'
 import { useGameStore, type VoicePack } from '../store/gameStore'
 
 const PACKS: { value: VoicePack; label: string }[] = [
@@ -16,6 +18,31 @@ export default function ParentSettings() {
   const setSpeakEveryMove = useGameStore((s) => s.setSpeakEveryMove)
   const closeSettings = useGameStore((s) => s.closeSettings)
   const restart = useGameStore((s) => s.restart)
+  const dialog = useRef<HTMLElement>(null)
+  const closeButton = useRef<HTMLButtonElement>(null)
+
+  useKeyboard({ escape: closeSettings })
+
+  useEffect(() => {
+    closeButton.current?.focus()
+  }, [])
+
+  const trapFocus = (event: KeyboardEvent) => {
+    if (event.key !== 'Tab') return
+    const focusables = dialog.current?.querySelectorAll<HTMLElement>(
+      'button, input, select, textarea, [href], [tabindex]:not([tabindex="-1"])',
+    )
+    if (!focusables || focusables.length === 0) return
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
 
   return (
     <div
@@ -35,6 +62,8 @@ export default function ParentSettings() {
       }}
     >
       <section
+        ref={dialog}
+        onKeyDown={trapFocus}
         style={{
           width: 'min(560px, 100%)',
           borderRadius: 8,
@@ -50,6 +79,7 @@ export default function ParentSettings() {
         <header style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <h2 style={{ margin: 0, fontSize: 22, color: 'var(--paper)' }}>Parent settings</h2>
           <button
+            ref={closeButton}
             type="button"
             aria-label="close settings"
             onClick={closeSettings}

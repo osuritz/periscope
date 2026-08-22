@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, KeyboardEventHandler, Ref } from 'react'
 import type { CellState } from '../../core/board'
 
 export type CellProps = {
@@ -8,6 +8,9 @@ export type CellProps = {
   label: string
   onFire?: () => void
   disabled?: boolean
+  tabIndex?: number
+  buttonRef?: Ref<HTMLButtonElement>
+  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
 }
 
 /**
@@ -47,7 +50,7 @@ const INK: Record<CellState, string> = {
   ship: 'var(--on-scope)',
 }
 
-export default function Cell({ state, size, label, onFire, disabled }: CellProps) {
+export default function Cell({ state, size, label, onFire, disabled, tabIndex, buttonRef, onKeyDown }: CellProps) {
   const style: CSSProperties = {
     width: size,
     height: size,
@@ -80,10 +83,13 @@ export default function Cell({ state, size, label, onFire, disabled }: CellProps
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       style={{ ...style, appearance: 'none', WebkitAppearance: 'none' }}
       onClick={onFire}
+      onKeyDown={onKeyDown}
       disabled={disabled}
+      tabIndex={tabIndex}
       aria-label={`${label}, ${state}`}
     >
       {GLYPH[state]}
