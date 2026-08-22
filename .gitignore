@@ -2,3 +2,7 @@ node_modules/
 dist/
 .DS_Store
 .superpowers/
+__pycache__/
+.venv/
+tools/voice/.venv/
+public/audio/samples/

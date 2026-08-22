@@ -206,7 +206,7 @@ describe('GameScreen', () => {
     // Reduce motion is off (see beforeEach), so this is the phone rule alone.
     installMatchMedia(390, 844)
     render(<GameScreen />)
-    expect(screen.getByText(/Tap a square to fire!/)).toBeInTheDocument()
+    expect(screen.getByText(/Your turn, captain. Pick a square./)).toBeInTheDocument()
   })
 
   it('gives a tablet the announcement bar under reduce motion, and only then', () => {
@@ -219,7 +219,7 @@ describe('GameScreen', () => {
 
     act(() => s().setReduceMotion(true))
     render(<GameScreen />)
-    expect(screen.getByText(/Tap a square to fire!/)).toBeInTheDocument()
+    expect(screen.getByText(/Your turn, captain. Pick a square./)).toBeInTheDocument()
   })
 
   it('shrinks the scope cells to the 44px tap floor for a phone held sideways', () => {

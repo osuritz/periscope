@@ -14,10 +14,11 @@ import { rotated, type Placement } from '../../core/placement'
 import { systemRng } from '../../core/rng'
 import { computerShot } from '../../ai/index'
 import type { Tier } from '../../ai/types'
+import type { VoicePack } from '../../audio/lines'
 
 export type Takeover = { result: ShotResult; at: Coord; shipId?: ShipId } | null
 export type ShellScreen = 'title' | 'play'
-export type VoicePack = 'captain' | 'narrator'
+export type { VoicePack }
 
 type GameStore = {
   game: GameState
