@@ -18,3 +18,8 @@ import '@testing-library/jest-dom/vitest'
 ;(globalThis as { jest?: { advanceTimersByTime: (ms: number) => void } }).jest = {
   advanceTimersByTime: (ms) => vi.advanceTimersByTime(ms),
 }
+
+Object.defineProperty(window.HTMLMediaElement.prototype, 'play', {
+  configurable: true,
+  value: vi.fn(() => Promise.resolve()),
+})

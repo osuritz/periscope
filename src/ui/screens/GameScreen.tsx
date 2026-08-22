@@ -9,6 +9,7 @@ import { useCompact, useLayout, useViewportHeight, type LayoutName } from '../la
 import { deckSizing, scopeSizing } from '../sizing'
 import { useGameStore } from '../store/gameStore'
 import { useComputerTurn } from '../store/useComputerTurn'
+import { useAnnouncements } from '../../audio/useAnnouncements'
 
 /** Reserves room for the last-shot chip so its first appearance (it renders
  * null before the first shot) doesn't shift the scope header's layout. Set to
@@ -95,11 +96,21 @@ export default function GameScreen() {
   const mode = useGameStore((s) => s.mode)
   const takeover = useGameStore((s) => s.takeover)
   const reduceMotion = useGameStore((s) => s.reduceMotion)
+  const volume = useGameStore((s) => s.volume)
+  const speakEveryMove = useGameStore((s) => s.speakEveryMove)
+  const voicePack = useGameStore((s) => s.voicePack)
   const fireAt = useGameStore((s) => s.fireAt)
   const restart = useGameStore((s) => s.restart)
   const dismissTakeover = useGameStore((s) => s.dismissTakeover)
 
   useComputerTurn()
+  useAnnouncements({
+    lastShot: game.lastShot,
+    mode,
+    pack: voicePack,
+    volume,
+    speakEveryMove,
+  })
 
   const myTurn = game.phase === 'playing' && game.turn === 'player'
 
@@ -308,7 +319,7 @@ export default function GameScreen() {
           </>
         )}
 
-        {announcementBar && <AnnouncementBar lastShot={game.lastShot} />}
+        {announcementBar && <AnnouncementBar lastShot={game.lastShot} pack={voicePack} />}
         {gameOver}
       </main>
 

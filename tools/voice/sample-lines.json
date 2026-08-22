@@ -1,0 +1,50 @@
+[
+  {
+    "lineId": "coord.a1",
+    "text": "A one."
+  },
+  {
+    "lineId": "coord.c7",
+    "text": "C seven."
+  },
+  {
+    "lineId": "coord.j10",
+    "text": "J ten."
+  },
+  {
+    "lineId": "result.hit.captain",
+    "text": "Boom! That's a hit!"
+  },
+  {
+    "lineId": "result.miss.captain",
+    "text": "Splash! Water only."
+  },
+  {
+    "lineId": "result.sunk.submarine.captain",
+    "text": "You sunk their submarine!"
+  },
+  {
+    "lineId": "turn.yours.captain",
+    "text": "Your turn, captain. Pick a square."
+  },
+  {
+    "lineId": "game.win.captain",
+    "text": "You did it! The fleet is safe!"
+  },
+  {
+    "lineId": "result.hit.narrator",
+    "text": "Hit."
+  },
+  {
+    "lineId": "result.miss.narrator",
+    "text": "Miss."
+  },
+  {
+    "lineId": "result.sunk.submarine.narrator",
+    "text": "Their submarine is sunk."
+  },
+  {
+    "lineId": "turn.yours.narrator",
+    "text": "Your turn. Choose a square."
+  }
+]

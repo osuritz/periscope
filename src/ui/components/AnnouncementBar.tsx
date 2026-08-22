@@ -1,27 +1,18 @@
-import { coordLabel } from '../../core/coords'
+import { announcementFor, type VoicePack } from '../../audio/lines'
 import type { LastShot } from '../../core/game'
 
 /**
- * The one place the game's wording lives. Plan 4 bakes audio clips keyed off
- * exactly these strings, so the visible caption and the spoken line can never
- * drift apart.
+ * The visible caption is assembled from the same line table used by the baked
+ * audio clips. Keep this as a small wrapper so tests can assert the wording
+ * without needing to render the bar.
  */
-export function announcementText(lastShot: LastShot | null): string {
-  if (!lastShot) return 'Tap a square to fire!'
-  const where = coordLabel(lastShot.at)
-  const ship = lastShot.shipId ?? 'ship'
-
-  if (lastShot.by === 'player') {
-    if (lastShot.result === 'sunk') return `${where}… you sank their ${ship}!`
-    return lastShot.result === 'hit' ? `${where}… you hit their ${ship}!` : `${where}… miss.`
-  }
-  if (lastShot.result === 'sunk') return `${where}… they sank your ${ship}!`
-  return lastShot.result === 'hit' ? `${where}… they hit your ${ship}!` : `${where}… they missed!`
+export function announcementText(lastShot: LastShot | null, pack: VoicePack = 'captain'): string {
+  return announcementFor(pack, lastShot).text
 }
 
-export type AnnouncementBarProps = { lastShot: LastShot | null }
+export type AnnouncementBarProps = { lastShot: LastShot | null; pack: VoicePack }
 
-export default function AnnouncementBar({ lastShot }: AnnouncementBarProps) {
+export default function AnnouncementBar({ lastShot, pack }: AnnouncementBarProps) {
   return (
     <div
       role="status"
@@ -60,7 +51,7 @@ export default function AnnouncementBar({ lastShot }: AnnouncementBarProps) {
       >
         🔊
       </span>
-      {announcementText(lastShot)}
+      {announcementText(lastShot, pack)}
     </div>
   )
 }
