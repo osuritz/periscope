@@ -27,7 +27,8 @@ export type TurnBarProps = {
  */
 export default function TurnBar({ turn, phase, layout, live = true, compact = false }: TurnBarProps) {
   const mine = phase === 'playing' && turn === 'player'
-  const text = phase === 'over' ? 'GAME OVER' : mine ? 'YOU FIRE' : 'THEIR TURN'
+  const text =
+    phase === 'setup' ? 'GET READY' : phase === 'over' ? 'GAME OVER' : mine ? 'YOU FIRE' : 'THEIR TURN'
 
   return (
     <div
